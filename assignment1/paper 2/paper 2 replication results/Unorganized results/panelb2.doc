@@ -1,0 +1,52 @@
+{\rtf1\fs24
+\trowd\trgaph75\trleft-75\intbl\trqc\clbrdrt\brdrs\cellx3600\clbrdrt\brdrs\cellx6336
+\ql \cell\qc (1)\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx3600\cellx6336
+\trowd\trgaph75\trleft-75\trqc\clbrdrb\brdrs\cellx3600\clbrdrb\brdrs\cellx6336
+\ql VARIABLES\cell\qc bnet_debt_issuance\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx3600\cellx6336
+\ql \cell\qc \cell\row
+\ql viol\cell\qc 17.10*\cell\row
+\ql \cell\qc (10.22)\cell\row
+\ql lviol\cell\qc -70.15***\cell\row
+\ql \cell\qc (10.33)\cell\row
+\ql blln_asset\cell\qc -961.4***\cell\row
+\ql \cell\qc (27.41)\cell\row
+\ql bltangible_asset\cell\qc 653.8***\cell\row
+\ql \cell\qc (93.16)\cell\row
+\ql blmarket_to_book\cell\qc -14.03***\cell\row
+\ql \cell\qc (1.618)\cell\row
+\ql blspind\cell\qc 87.55***\cell\row
+\ql \cell\qc (33.88)\cell\row
+\ql bbook_debt_asset\cell\qc 940.7***\cell\row
+\ql \cell\qc (46.26)\cell\row
+\ql blnet_worth_assets\cell\qc 2,227***\cell\row
+\ql \cell\qc (82.60)\cell\row
+\ql blcash_asset\cell\qc 9.868\cell\row
+\ql \cell\qc (51.37)\cell\row
+\ql blebitda_asset\cell\qc -246.2**\cell\row
+\ql \cell\qc (117.0)\cell\row
+\ql bebitda_asset\cell\qc 2.508\cell\row
+\ql \cell\qc (123.8)\cell\row
+\ql blcash_flow_asset\cell\qc 63.23\cell\row
+\ql \cell\qc (132.3)\cell\row
+\ql bcash_flow_asset\cell\qc 284.8*\cell\row
+\ql \cell\qc (155.0)\cell\row
+\ql blnet_income_asset\cell\qc -142.4\cell\row
+\ql \cell\qc (119.1)\cell\row
+\ql bnet_income_asset\cell\qc -278.1**\cell\row
+\ql \cell\qc (141.3)\cell\row
+\ql blinterest_expense_asset\cell\qc -15,315***\cell\row
+\ql \cell\qc (1,207)\cell\row
+\ql binterest_expense_asset\cell\qc 16,815***\cell\row
+\ql \cell\qc (1,286)\cell\row
+\ql Constant\cell\qc 21.73***\cell\row
+\ql \cell\qc (1.105)\cell\row
+\ql \cell\qc \cell\row
+\ql Observations\cell\qc 91,724\cell\row
+\trowd\trgaph75\trleft-75\trqc\trbrdrb\brdrs\clbrdrb\brdrs\cellx3600\clbrdrb\brdrs\cellx6336
+\ql R-squared\cell\qc 0.173\cell\row
+\pard\qc
+Robust standard errors in parentheses\par
+*** p<0.01, ** p<0.05, * p<0.1\par
+}

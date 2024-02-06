@@ -1,0 +1,1324 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}/Users/yukerui/Desktop/paper1 replication logfile.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 6 Feb 2024, 02:51:25
+
+{com}. * Replication of the first paper
+
+. use "/Users/yukerui/Desktop/main data.dta"
+
+. * Calculate the full sample's variable
+
+. destring gvkey, replace
+{txt}gvkey: all characters numeric; {res}replaced {txt}as {res}long
+
+{com}. 
+. * Set panel data
+
+. sort gvkey fyear
+
+. xtset gvkey fyear
+{res}
+{col 1}{txt:Panel variable: }{res:gvkey}{txt: (unbalanced)}
+{p 1 16 2}{txt:Time variable: }{res:fyear}{txt:, }{res:{bind:1995}}{txt: to }{res:{bind:2004}}{txt:, but with gaps}{p_end}
+{txt}{col 10}Delta: {res}1 unit
+
+{com}. 
+. * Calculate the firm characteristics of full sample
+
+. * Book/assets
+
+. gen bd = (dlc + dltt) / at
+{txt}(11,831 missing values generated)
+
+{com}. 
+. * EBITDA/(assets-cash）
+
+. gen EBITDA_asset_cash =  oibdp / (at - che)
+{txt}(14,961 missing values generated)
+
+{com}. gen cflcl1 = L.EBITDA_asset_cash
+{txt}(31,888 missing values generated)
+
+{com}. 
+. * Tangible assets/(assets -cash)
+
+. gen tangibleasset = ppent / (at - che)
+{txt}(14,341 missing values generated)
+
+{com}. gen tanglcl1 = L.tangibleasset
+{txt}(31,457 missing values generated)
+
+{com}. 
+. * Net worth, cash adjusted
+
+. gen net_worth = (at - che - lt) / (at - che)
+{txt}(11,984 missing values generated)
+
+{com}. gen nwlcl1 = L.net_worth
+{txt}(29,439 missing values generated)
+
+{com}. 
+. * Assets - cash
+
+. gen asset_cash = at - che
+{txt}(11,050 missing values generated)
+
+{com}. gen asslcl1 = L.asset_cash
+{txt}(28,694 missing values generated)
+
+{com}. 
+. * Market-to-book, cash adjusted
+
+. gen bookvalue_equity = at - lt - pstkl + txditc
+{txt}(23,188 missing values generated)
+
+{com}. gen market_value_equity = csho * prcc_f
+{txt}(19,383 missing values generated)
+
+{com}. gen market_to_book = (at - bookvalue_equity + market_value_equity - che)/ (at - che)
+{txt}(36,766 missing values generated)
+
+{com}. gen mblcl1 = L.market_to_book
+{txt}(50,305 missing values generated)
+
+{com}. 
+. * Drop useless variables
+
+. drop datadate indfmt consol popsrc datafmt curcd EBITDA_asset_cash tangibleasset net_worth asset_cash bookvalue_equity market_value_equity market_to_book
+
+. save "/Users/yukerui/Desktop/1.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/1.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Merge data
+
+. use "/Users/yukerui/Desktop/sufi_rfs_linesofcredit20070221data.dta", clear
+{txt}(LOC DATA FROM SUFI, RFS, BANK LINES OF CREDIT IN CORPORATE FINANCE)
+
+{com}. gen fyear = yeara
+
+. sort gvkey fyear
+
+. save "/Users/yukerui/Desktop/sufi_rfs_linesofcredit20070221data.dta", replace
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/sufi_rfs_linesofcredit20070221data.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. use "/Users/yukerui/Desktop/1.dta", clear
+
+. sort gvkey fyear
+
+. merge 1:1 gvkey fyear using /Users/yukerui/Desktop/sufi_rfs_linesofcredit20070221data.dta
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}          91,088
+{txt}{col 9}from master{col 30}{res}          91,088{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               0{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          28,447{txt}  (_merge==3)
+{col 5}{hline 41}
+
+{com}. keep if _merge == 3
+{txt}(91,088 observations deleted)
+
+{com}. 
+. * Winsorize variables
+
+. winsor2 cflcl1, replace cut(5 95)
+
+. winsor2 tanglcl1, replace cut(5 95)
+
+. winsor2 nwlcl1, replace cut(5 95)
+
+. winsor2 mblcl1, replace cut(5 95)
+
+. * There is no winsorize here for all financial variables because I found that bd and asslcl1 are closer to the values in the paper without being winsorized.
+
+. 
+. * Has line of credit {c -(}0,1{c )-}: the variable lineofcredit has been generated
+
+. 
+. drop yeara _merge
+
+. sort gvkey fyear
+
+. save "/Users/yukerui/Desktop/2.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/2.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Industry sales volatility
+
+. * Clean data
+
+. use "/Users/yukerui/Desktop/quarterly data.dta", clear
+
+. drop indfmt consol popsrc datafmt curcdq datacqtr costat datadate datafqtr
+
+. destring gvkey, replace
+{txt}gvkey: all characters numeric; {res}replaced {txt}as {res}long
+
+{com}. 
+. * Set panel data structure
+
+. gen qdate = yq(fyearq, fqtr)
+
+. xtset gvkey qdate
+{res}
+{col 1}{txt:Panel variable: }{res:gvkey}{txt: (unbalanced)}
+{p 1 16 2}{txt:Time variable: }{res:qdate}{txt:, }{res:{bind:140}}{txt: to }{res:{bind:182}}{txt:, but with gaps}{p_end}
+{txt}{col 10}Delta: {res}1 unit
+
+{com}. 
+. * Calculate the standard deviation of quarterly differences in sales for each company for each year
+
+. bysort gvkey: gen saleq_diff = saleq - L.saleq
+{txt}(73,868 missing values generated)
+
+{com}. egen saleq_diff_std = sd(saleq_diff), by(gvkey fyearq)
+{txt}(67,832 missing values generated)
+
+{com}. keep if fyearq >= 1996 & fyearq <= 2003
+{txt}(90,833 observations deleted)
+
+{com}. 
+. * Calculate the average assets of each company per year
+
+. egen avg_assets = mean(atq), by(gvkey fyearq)
+{txt}(21,063 missing values generated)
+
+{com}. 
+. * Scale standard deviation by annual average assets
+
+. gen scaled_std = saleq_diff_std / avg_assets
+{txt}(44,853 missing values generated)
+
+{com}. 
+. * Extract SIC code
+
+. gen sic_3 = substr(sic, 1, 3)
+
+. 
+. * Calculate the median standard deviation for each 3-digit SIC industry for each year
+
+. bysort sic_3 fyearq: egen q_salesvar = median(scaled_std)
+{txt}(14 missing values generated)
+
+{com}. duplicates drop gvkey fyearq, force
+
+{p 0 4}{txt}Duplicates in terms of {res} gvkey fyearq{p_end}
+
+{txt}(286,987 observations deleted)
+
+{com}. 
+. * Merge data
+
+. rename fyearq fyear
+{res}
+{com}. sort gvkey fyear
+
+. save "/Users/yukerui/Desktop/3.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/3.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. use "/Users/yukerui/Desktop/2.dta", clear
+
+. merge 1:1 gvkey fyear using /Users/yukerui/Desktop/3.dta
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}          71,211
+{txt}{col 9}from master{col 30}{res}               0{txt}  (_merge==1)
+{col 9}from using{col 30}{res}          71,211{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          28,447{txt}  (_merge==3)
+{col 5}{hline 41}
+
+{com}. keep if _merge == 3
+{txt}(71,211 observations deleted)
+
+{com}. drop fqtr atq saleq qdate saleq_diff saleq_diff_std avg_assets scaled_std sic_3 _merge
+
+. sort gvkey fyear
+
+. save "/Users/yukerui/Desktop/4.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/4.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Cash-flow volatility  
+
+. * Clean data
+
+. use "/Users/yukerui/Desktop/cash volatility.dta", clear
+
+. destring gvkey, replace
+{txt}gvkey: all characters numeric; {res}replaced {txt}as {res}long
+
+{com}. drop datadate indfmt consol popsrc datafmt tic curcd costat
+
+. sum
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 7}gvkey {c |}{res}    173,158    41411.57    45932.07       1004     278317
+{txt}{space 7}fyear {c |}{res}    173,155    1997.113    4.174298       1990       2004
+{txt}{space 10}at {c |}{res}    152,778      3571.4     29907.7          0    1520140
+{txt}{space 10}ch {c |}{res}    148,409    121.9306    898.9798   -279.141      52999
+{txt}{space 9}che {c |}{res}    152,446    341.9567    4507.221        -34   511253.1
+{txt}{hline 13}{c +}{hline 57}
+{space 7}oibdp {c |}{res}    148,185    235.5202    1344.406  -7639.092      52205
+
+{com}. 
+. * Set panel data structure
+
+. sort gvkey fyear
+
+. xtset gvkey fyear
+{res}
+{col 1}{txt:Panel variable: }{res:gvkey}{txt: (unbalanced)}
+{p 1 16 2}{txt:Time variable: }{res:fyear}{txt:, }{res:{bind:1990}}{txt: to }{res:{bind:2004}}{txt:, but with gaps}{p_end}
+{txt}{col 10}Delta: {res}1 unit
+
+{com}. 
+. * Since che lacks many values in the dataset, it is implausible for us to replicate cfvar with compustata data. Winsorization can be used to reduce the impact of extreme values and missing values on the results. After trying, using the (15, 85) interval can get the optimal result.
+
+. winsor2 che, replace cut(15 85)
+
+. winsor2 oibdp, replace cut(15 85)
+
+. 
+. * Calculate annual EBITDA change
+
+. gen oibdp_change = oibdp - L.oibdp
+{txt}(45,511 missing values generated)
+
+{com}. 
+. * Calculate non-cash assets
+
+. gen non_cash_assets = at - che
+{txt}(20,713 missing values generated)
+
+{com}. 
+. * Initialize rolling window statistics variables
+
+. gen oibdp_std_4yr = .
+{txt}(173,158 missing values generated)
+
+{com}. gen avg_non_cash_assets_4yr = .
+{txt}(173,158 missing values generated)
+
+{com}. quietly forval i = 1990/2003 {c -(}
+. 
+.     * Calculate the standard deviation of oibdp_change
+.     by gvkey: egen temp_std = sd(oibdp_change) if fyear >= `i' - 4 & fyear <= `i'
+.     replace oibdp_std_4yr = temp_std if fyear == `i'
+. 
+.     * Calculate the average of non_cash_assets
+.     by gvkey: egen temp_mean = mean(non_cash_assets) if fyear >= `i' - 4 & fyear <= `i'
+.     replace avg_non_cash_assets_4yr = temp_mean if fyear == `i'
+. 
+.     * Clear temporary variables
+.     drop temp_std temp_mean
+. {c )-}
+
+. 
+. * Calculate cfvar
+
+. keep if fyear >= 1996 & fyear <= 2003
+{txt}(77,018 observations deleted)
+
+{com}. gen cfvar = oibdp_std_4yr / avg_non_cash_assets_4yr
+{txt}(23,581 missing values generated)
+
+{com}. 
+. drop oibdp_change non_cash_assets oibdp_std_4yr avg_non_cash_assets_4yr
+
+. sort gvkey fyear
+
+. save "/Users/yukerui/Desktop/5.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/5.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Merge data
+
+. use "/Users/yukerui/Desktop/4.dta", clear
+
+. merge 1:1 gvkey fyear using /Users/yukerui/Desktop/5.dta
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}          67,693
+{txt}{col 9}from master{col 30}{res}               0{txt}  (_merge==1)
+{col 9}from using{col 30}{res}          67,693{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          28,447{txt}  (_merge==3)
+{col 5}{hline 41}
+
+{com}. keep if _merge == 3
+{txt}(67,693 observations deleted)
+
+{com}. drop _merge
+
+. sort gvkey fyear
+
+. save "/Users/yukerui/Desktop/6.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/6.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Not in an S&P index {c -(}0,1{c )-} 
+
+. use "/Users/yukerui/Desktop/SPMIM_data.dta", clear
+
+. gen spind = 0
+
+. gen spmim2 = cond(missing(spmim), 0, spmim)
+
+. replace spind = 1 if spmim2 == 0
+{txt}(1,539,741 real changes made)
+
+{com}. duplicates drop gvkey fyear, force
+
+{p 0 4}{txt}Duplicates in terms of {res} gvkey fyear{p_end}
+
+{txt}(1,589,969 observations deleted)
+
+{com}. drop iid month year datadate spmim spmim2
+
+. 
+. * Merge data
+
+. sort gvkey fyear
+
+. save "/Users/yukerui/Desktop/7.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/7.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. use "/Users/yukerui/Desktop/6.dta", clear
+
+. merge 1:1 gvkey fyear using /Users/yukerui/Desktop/7.dta
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}         134,952
+{txt}{col 9}from master{col 30}{res}               2{txt}  (_merge==1)
+{col 9}from using{col 30}{res}         134,950{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          28,445{txt}  (_merge==3)
+{col 5}{hline 41}
+
+{com}. keep if _merge != 2
+{txt}(134,950 observations deleted)
+
+{com}. drop _merge
+
+. sort gvkey fyear
+
+. save "/Users/yukerui/Desktop/8.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/8.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Traded over the counter {c -(}0,1{c )-}
+
+. use "/Users/yukerui/Desktop/8.dta", clear
+
+. gen exch = (exchg == 19)
+
+. save "/Users/yukerui/Desktop/9.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/9.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Firm age (years since IPO) 
+
+. use "/Users/yukerui/Desktop/firmage.dta", clear
+
+. destring gvkey, replace
+{txt}gvkey: all characters numeric; {res}replaced {txt}as {res}long
+
+{com}. drop datadate indfmt consol popsrc datafmt costat curcd
+
+. sort gvkey fyear
+
+. 
+. * Find the first occurrence of fyear for each gvkey
+
+. by gvkey: egen first_fyear = min(fyear)
+
+. 
+. * Calculate year differences
+
+. keep if fyear >= 1996 & fyear <= 2003
+{txt}(248,752 observations deleted)
+
+{com}. gen firmage = fyear - first_fyear 
+
+. drop first_fyear
+
+. sort gvkey fyear
+
+. save "/Users/yukerui/Desktop/10.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/10.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Merge data
+
+. use "/Users/yukerui/Desktop/9.dta", clear
+
+. sort gvkey fyear
+
+. merge 1:1 gvkey fyear using /Users/yukerui/Desktop/10.dta
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}          67,693
+{txt}{col 9}from master{col 30}{res}               0{txt}  (_merge==1)
+{col 9}from using{col 30}{res}          67,693{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          28,447{txt}  (_merge==3)
+{col 5}{hline 41}
+
+{com}. keep if _merge == 3
+{txt}(67,693 observations deleted)
+
+{com}. drop _merge
+
+. save "/Users/yukerui/Desktop/11.dta"
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/11.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * The reason why all firmage minus 1 here is because the results after this processing are consistent with the paper.
+
+. replace firmage = firmage - 1
+{txt}(28,447 real changes made)
+
+{com}. 
+. * Calculate the random sample's variable
+
+. * Calculate the line of credit variables
+
+. * Has line of credit {c -(}0,1{c )-}: lineofcredit_rs has been generated
+
+. 
+. * Total line of credit/assets
+
+. gen ra_linetot =  linetot / at
+{txt}(26,539 missing values generated)
+
+{com}. 
+. * Unused line of credit/assets
+
+. gen ra_lineun = lineun / at
+{txt}(26,539 missing values generated)
+
+{com}. 
+. * Used line of credit/assets
+
+. gen ra_line = line / at
+{txt}(26,539 missing values generated)
+
+{com}. 
+. * Total line/(total line + cash)
+
+. gen liq_linetot = linetot / (linetot + che)
+{txt}(26,539 missing values generated)
+
+{com}. 
+. * Unused line/(unused line + cash)
+
+. gen liq_lineun = lineun / (lineun + che)
+{txt}(26,541 missing values generated)
+
+{com}. 
+. * Violation of financial covenant {c -(}0,1{c )-}: def has been generated
+
+. * The end of calculation for summary statistics
+
+. * Output of Table 1
+
+. tabstat lineofcredit bd cflcl1 tanglcl1 nwlcl1 asslcl1 mblcl1 q_salesvar cfvar spind exch firmage, s(mean p50 sd n) col(stat) f(%7.3f)
+
+{txt}{ralign 12:Variable} {...}
+{c |}      Mean       p50        SD         N
+{hline 13}{c +}{hline 40}
+{ralign 12:lineofcredit} {...}
+{c |}{...}
+   {res}  0.817     1.000     0.387   2.8e+04
+{txt}{ralign 12:bd} {...}
+{c |}{...}
+   {res}  0.204     0.171     0.190   2.8e+04
+{txt}{ralign 12:cflcl1} {...}
+{c |}{...}
+   {res}  0.026     0.125     0.358   2.8e+04
+{txt}{ralign 12:tanglcl1} {...}
+{c |}{...}
+   {res}  0.340     0.277     0.239   2.8e+04
+{txt}{ralign 12:nwlcl1} {...}
+{c |}{...}
+   {res}  0.443     0.452     0.235   2.8e+04
+{txt}{ralign 12:asslcl1} {...}
+{c |}{...}
+  {res}1608.557   102.461   1.1e+04   2.8e+04
+{txt}{ralign 12:mblcl1} {...}
+{c |}{...}
+   {res}  2.995     1.534     3.580   2.7e+04
+{txt}{ralign 12:q_salesvar} {...}
+{c |}{...}
+   {res}  0.043     0.033     0.148   2.8e+04
+{txt}{ralign 12:cfvar} {...}
+{c |}{...}
+   {res}  0.097     0.045     0.858   2.8e+04
+{txt}{ralign 12:spind} {...}
+{c |}{...}
+   {res}  0.708     1.000     0.455   2.8e+04
+{txt}{ralign 12:exch} {...}
+{c |}{...}
+   {res}  0.185     0.000     0.388   2.8e+04
+{txt}{ralign 12:firmage} {...}
+{c |}{...}
+   {res} 15.500    10.000    13.471   2.8e+04
+{txt}{hline 13}{c BT}{hline 40}
+
+{com}. 
+. tabstat lineofcredit_rs ra_linetot ra_lineun ra_line liq_linetot liq_lineun def bd cflcl1 tanglcl1 nwlcl1 asslcl1 mblcl1 q_salesvar cfvar spind exch firmage if randomsample==1, s(mean p50 sd n) col(stat) f(%7.3f) 
+
+{txt}{ralign 12:Variable} {...}
+{c |}      Mean       p50        SD         N
+{hline 13}{c +}{hline 40}
+{ralign 12:lineofcred~s} {...}
+{c |}{...}
+   {res}  0.748     1.000     0.434  1908.000
+{txt}{ralign 12:ra_linetot} {...}
+{c |}{...}
+   {res}  0.159     0.112     0.169  1908.000
+{txt}{ralign 12:ra_lineun} {...}
+{c |}{...}
+   {res}  0.102     0.069     0.125  1908.000
+{txt}{ralign 12:ra_line} {...}
+{c |}{...}
+   {res}  0.057     0.000     0.097  1908.000
+{txt}{ralign 12:liq_linetot} {...}
+{c |}{...}
+   {res}  0.512     0.569     0.388  1908.000
+{txt}{ralign 12:liq_lineun} {...}
+{c |}{...}
+   {res}  0.450     0.455     0.373  1906.000
+{txt}{ralign 12:def} {...}
+{c |}{...}
+   {res}  0.080     0.000     0.271  1908.000
+{txt}{ralign 12:bd} {...}
+{c |}{...}
+   {res}  0.205     0.169     0.196  1908.000
+{txt}{ralign 12:cflcl1} {...}
+{c |}{...}
+   {res}  0.034     0.126     0.353  1908.000
+{txt}{ralign 12:tanglcl1} {...}
+{c |}{...}
+   {res}  0.330     0.274     0.226  1908.000
+{txt}{ralign 12:nwlcl1} {...}
+{c |}{...}
+   {res}  0.457     0.468     0.232  1908.000
+{txt}{ralign 12:asslcl1} {...}
+{c |}{...}
+  {res}1441.409   116.411  7682.261  1908.000
+{txt}{ralign 12:mblcl1} {...}
+{c |}{...}
+   {res}  2.847     1.510     3.434  1797.000
+{txt}{ralign 12:q_salesvar} {...}
+{c |}{...}
+   {res}  0.045     0.036     0.032  1908.000
+{txt}{ralign 12:cfvar} {...}
+{c |}{...}
+   {res}  0.095     0.042     0.187  1908.000
+{txt}{ralign 12:spind} {...}
+{c |}{...}
+   {res}  0.703     1.000     0.457  1907.000
+{txt}{ralign 12:exch} {...}
+{c |}{...}
+   {res}  0.208     0.000     0.406  1908.000
+{txt}{ralign 12:firmage} {...}
+{c |}{...}
+   {res} 15.031     9.000    13.405  1908.000
+{txt}{hline 13}{c BT}{hline 40}
+
+{com}. 
+. 
+. * Output of Table 3
+
+. * Generate independent variables
+
+. sort gvkey fyear
+
+. gen lasslcl1 = ln(asslcl1)
+
+. gen q_salesvar1 = L.q_salesvar
+{txt}(4,833 missing values generated)
+
+{com}. gen cfvar1 = L.cfvar
+{txt}(4,833 missing values generated)
+
+{com}. gen firmage1 = L.firmage
+{txt}(4,833 missing values generated)
+
+{com}. gen lfirmage= ln(firmage1)
+{txt}(4,833 missing values generated)
+
+{com}. gen sic_1 = substr(sic, 1, 1)
+
+. gen yd1996 = (fyear == 1996)
+
+. gen yd1997 = (fyear == 1997)
+
+. gen yd1998 = (fyear == 1998)
+
+. gen yd1999 = (fyear == 1999)
+
+. gen yd2000 = (fyear == 2000)
+
+. gen yd2001 = (fyear == 2001)
+
+. gen yd2002 = (fyear == 2002)
+
+. gen yd2003 = (fyear == 2003)
+
+. 
+. * Regression
+
+. xi: dprobit lineofcredit yd* i.sic_1 cflcl1 tanglcl1 lasslcl1 nwlcl1 mblcl1 q_salesvar1 cfvar1 spind exch lfirmage, cluster(gvkey)
+{txt}i.sic_1{col 19}_Isic_1_1-10{col 39}(_Isic_1_1 for sic_1==0 omitted)
+
+note: {bf:yd1996} omitted because of collinearity.
+note: {bf:yd1997} omitted because of collinearity.
+Iteration 0:  Log pseudolikelihood = {res}-10713.627
+{txt}Iteration 1:  Log pseudolikelihood = {res} -8577.796
+{txt}Iteration 2:  Log pseudolikelihood = {res}-8502.4739
+{txt}Iteration 3:  Log pseudolikelihood = {res} -8501.478
+{txt}Iteration 4:  Log pseudolikelihood = {res}-8501.4777
+
+{txt}Probit regression, reporting marginal effects           Number of obs ={res}  22674
+                                                        {txt}Wald chi2({res}25{txt}) ={res}1303.33
+                                                        {txt}Prob > chi2   ={res} 0.0000
+{txt}Log pseudolikelihood = {res}-8501.4777                       {txt}Pseudo R2     ={res} 0.2065
+
+{txt}{ralign 78:(Std. err. adjusted for {res:4,417} clusters in gvkey)}
+{hline 9}{c TT}{hline 68}
+{col 10}{c |}{col 26}Robust
+lineof~t {c |}{col 17}dF/dx{col 25}Std. err.{col 40}z{col 45}P>|z|{col 55}x-bar{col 62}[    95% C.I.   ]
+{hline 9}{c +}{hline 68}
+  yd1998*{c |}  {res}   .00287    .005869     0.49   0.627   .141925  -.008633  .014373
+  {txt}yd1999*{c |}  {res}-.0076639   .0072634    -1.07   0.284   .152686    -.0219  .006572
+  {txt}yd2000*{c |}  {res}-.0043863   .0082641    -0.54   0.593   .146556  -.020584  .011811
+  {txt}yd2001*{c |}  {res}-.0220122   .0094571    -2.42   0.016   .144394  -.040548 -.003477
+  {txt}yd2002*{c |}  {res}-.0350962   .0097887    -3.79   0.000   .148011  -.054282 -.015911
+  {txt}yd2003*{c |}  {res}-.0546009   .0107995    -5.48   0.000    .14263  -.075768 -.033434
+{txt}_Isic_~2*{c |}  {res} .1122767   .0320982     2.07   0.038   .061612   .049365  .175188
+{txt}_Isic_~3*{c |}  {res} .1194998   .0457469     1.95   0.052   .181882   .029838  .209162
+{txt}_Isic_~4*{c |}  {res} .1471375   .0584695     2.17   0.030    .32169   .032539  .261736
+{txt}_Isic_~5*{c |}  {res} .1169973   .0338484     2.13   0.033   .088383   .050656  .183339
+{txt}_Isic_~6*{c |}  {res} .1253896   .0337074     2.30   0.022   .111008   .059324  .191455
+{txt}_Isic_~7*{c |}  {res} .0685806   .0526821     1.00   0.320   .010011  -.034675  .171836
+{txt}_Isic_~8*{c |}  {res} .0997194   .0490256     1.58   0.115    .15961   .003631  .195808
+{txt}_Isic_~9*{c |}  {res} .1192768   .0262757     2.37   0.018   .049219   .067777  .170776
+{txt}_Isic~10*{c |}  {res} .1080626   .0277179     2.04   0.041   .013452   .053737  .162389
+  {txt}cflcl1 {c |}  {res} .1036537   .0116296     9.04   0.000   .028447    .08086  .126447
+{txt}tanglcl1 {c |}  {res} .0177571   .0192395     0.92   0.356   .339913  -.019952  .055466
+{txt}lasslcl1 {c |}  {res} .0434666   .0031142    13.80   0.000    4.7646   .037363   .04957
+  {txt}nwlcl1 {c |}  {res}-.1005265   .0177717    -5.70   0.000   .448887  -.135358 -.065695
+  {txt}mblcl1 {c |}  {res}-.0140707     .00121   -12.44   0.000   2.75883  -.016442 -.011699
+{txt}q_sale~1 {c |}  {res} .7609253   .2237496     3.36   0.001   .042697   .322384  1.19947
+  {txt}cfvar1 {c |}  {res} .0051751   .0074594     0.69   0.488   .091277  -.009445  .019795
+   {txt}spind*{c |}  {res} .0552294   .0142449     4.06   0.000   .702831    .02731  .083149
+    {txt}exch*{c |}  {res}-.0055498   .0112861    -0.50   0.620   .186822   -.02767  .016571
+{txt}lfirmage {c |}  {res} .0097015   .0047599     2.03   0.043   2.28261   .000372  .019031
+{txt}{hline 9}{c +}{hline 68}
+  obs. P {c |}  {res} .8192644
+{txt} pred. P {c |}  {res} .8631579{txt}  (at x-bar)
+{hline 9}{c BT}{hline 68}
+(*) dF/dx is for discrete change of dummy variable from 0 to 1
+{p 4 0 0}z and P>|z| correspond to the test of the underlying coefficient being 0
+
+{com}. outreg2 using "/Users/yukerui/Desktop/column1.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/column1.doc"'"':/Users/yukerui/Desktop/column1.doc}
+{browse `"/Users/yukerui/Desktop/First paper"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/column1.txt""':seeout}
+
+{com}. 
+. xi: dprobit lineofcredit_rs yd* i.sic_1 cflcl1 tanglcl1 lasslcl1 nwlcl1 mblcl1 q_salesvar1 cfvar1 spind exch lfirmage if randomsample==1, cluster(gvkey)
+{txt}i.sic_1{col 19}_Isic_1_1-10{col 39}(_Isic_1_1 for sic_1==0 omitted)
+
+note: {bf:yd1996} omitted because of collinearity.
+note: {bf:yd1997} omitted because of collinearity.
+note: {bf:_Isic_1_7} omitted because of collinearity.
+Iteration 0:  Log pseudolikelihood = {res}-839.62037
+{txt}Iteration 1:  Log pseudolikelihood = {res} -613.4081
+{txt}Iteration 2:  Log pseudolikelihood = {res}-593.66053
+{txt}Iteration 3:  Log pseudolikelihood = {res}-592.20869
+{txt}Iteration 4:  Log pseudolikelihood = {res}-592.14103
+{txt}Iteration 5:  Log pseudolikelihood = {res}-592.12439
+{txt}Iteration 6:  Log pseudolikelihood = {res} -592.1192
+{txt}Iteration 7:  Log pseudolikelihood = {res}-592.11753
+{txt}Iteration 8:  Log pseudolikelihood = {res}-592.11699
+{txt}Iteration 9:  Log pseudolikelihood = {res}-592.11681
+{txt}Iteration 10: Log pseudolikelihood = {res}-592.11675
+{txt}Iteration 11: Log pseudolikelihood = {res}-592.11673
+{txt}Iteration 12: Log pseudolikelihood = {res}-592.11672
+{txt}Iteration 13: Log pseudolikelihood = {res}-592.11672
+{txt}Iteration 14: Log pseudolikelihood = {res}-592.11672
+{txt}Iteration 15: Log pseudolikelihood = {res}-592.11672
+{txt}Iteration 16: Log pseudolikelihood = {res}-592.11672
+{txt}Iteration 17: Log pseudolikelihood = {res}-592.11672
+{txt}Iteration 18: Log pseudolikelihood = {res}-592.11672
+{txt}Iteration 19: Log pseudolikelihood = {res}-592.11672
+{txt}Iteration 20: Log pseudolikelihood = {res}-592.11672
+
+{txt}Probit regression, reporting marginal effects           Number of obs ={res}   1498
+                                                        {txt}Wald chi2({res}22{txt}) ={res}      .
+                                                        {txt}Prob > chi2   ={res}      .
+{txt}Log pseudolikelihood = {res}-592.11672                       {txt}Pseudo R2     ={res} 0.2948
+
+{txt}{ralign 78:(Std. err. adjusted for {res:288} clusters in gvkey)}
+{hline 9}{c TT}{hline 68}
+{col 10}{c |}{col 26}Robust
+lineof~s {c |}{col 17}dF/dx{col 25}Std. err.{col 40}z{col 45}P>|z|{col 55}x-bar{col 62}[    95% C.I.   ]
+{hline 9}{c +}{hline 68}
+  yd1998*{c |}  {res} .0075774   .0273062     0.27   0.784   .142857  -.045942  .061097
+  {txt}yd1999*{c |}  {res}-.0201574   .0333125    -0.62   0.535    .15287  -.085449  .045134
+  {txt}yd2000*{c |}  {res}-.0083485   .0400525    -0.21   0.833   .149533   -.08685  .070153
+  {txt}yd2001*{c |}  {res}-.0453794   .0438057    -1.10   0.273   .143525  -.131237  .040478
+  {txt}yd2002*{c |}  {res}-.0431092   .0454957    -1.00   0.318     .1502  -.132279  .046061
+  {txt}yd2003*{c |}  {res}-.1148738    .054074    -2.37   0.018   .140854  -.220857 -.008891
+{txt}_Isic_~2*{c |}  {res}-.8679242   .0170415        .       .   .038051  -.901325 -.834523
+{txt}_Isic_~3*{c |}  {res}-.9564071   .0119187    -9.57   0.000   .159546  -.979767 -.933047
+{txt}_Isic_~4*{c |}  {res}-.9866283   .0097693   -10.26   0.000   .333111  -1.00578 -.967481
+{txt}_Isic_~5*{c |}  {res}-.9100515   .0155045    -7.66   0.000    .08745   -.94044 -.879663
+{txt}_Isic_~6*{c |}  {res}-.9498203   .0127136    -9.17   0.000    .14219  -.974739 -.924902
+{txt}_Isic_~8*{c |}  {res}-.9533577   .0113156   -10.53   0.000   .140187  -.975536  -.93118
+{txt}_Isic_~9*{c |}  {res}-.9139492   .0152273    -9.79   0.000   .086782  -.943794 -.884104
+{txt}_Isic~10*{c |}  {res}-.8308294   .0202833   -12.44   0.000    .00267  -.870584 -.791075
+  {txt}cflcl1 {c |}  {res} .1582332   .0640313     2.48   0.013   .035669   .032734  .283732
+{txt}tanglcl1 {c |}  {res} .0611956   .0922113     0.67   0.504   .334613  -.119535  .241927
+{txt}lasslcl1 {c |}  {res} .0477061   .0171986     2.91   0.004   4.77038   .013998  .081415
+  {txt}nwlcl1 {c |}  {res}-.0414872   .0765287    -0.54   0.589   .461039  -.191481  .108506
+  {txt}mblcl1 {c |}  {res}-.0240234   .0057339    -4.49   0.000   2.63362  -.035262 -.012785
+{txt}q_sale~1 {c |}  {res} 3.386491   .8801814     3.69   0.000   .045015   1.66137  5.11162
+  {txt}cfvar1 {c |}  {res}-.2857595   .1364886    -2.07   0.038   .099091  -.553272 -.018247
+   {txt}spind*{c |}  {res} .0676196   .0669409     1.06   0.288   .697597  -.063582  .198821
+    {txt}exch*{c |}  {res}-.0380573   .0517749    -0.76   0.448   .209613  -.139534   .06342
+{txt}lfirmage {c |}  {res}-.0024904   .0213069    -0.12   0.907   2.23473  -.044251   .03927
+{txt}{hline 9}{c +}{hline 68}
+  obs. P {c |}  {res} .7516689
+{txt} pred. P {c |}  {res}  .826548{txt}  (at x-bar)
+{hline 9}{c BT}{hline 68}
+(*) dF/dx is for discrete change of dummy variable from 0 to 1
+{p 4 0 0}z and P>|z| correspond to the test of the underlying coefficient being 0
+
+{com}. outreg2 using "/Users/yukerui/Desktop/column2.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/column2.doc"'"':/Users/yukerui/Desktop/column2.doc}
+{browse `"/Users/yukerui/Desktop/First paper"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/column2.txt""':seeout}
+
+{com}.  
+. xi: regress liq_linetot yd* i.sic_1 cflcl1 tanglcl1 lasslcl1 nwlcl1 mblcl1 q_salesvar1 cfvar1 spind exch lfirmage if randomsample==1, cluster(gvkey) robust
+{txt}i.sic_1{col 19}_Isic_1_1-10{col 39}(_Isic_1_1 for sic_1==0 omitted)
+{p 0 6 2}note: {bf:yd1996} omitted because of collinearity.{p_end}
+{p 0 6 2}note: {bf:yd1997} omitted because of collinearity.{p_end}
+{p 0 6 2}note: {bf:_Isic_1_7} omitted because of collinearity.{p_end}
+
+Linear regression                               Number of obs     = {res}     1,498
+                                                {txt}{help j_robustsingular:F(23, 287) }       =  {res}        .
+                                                {txt}Prob > F          = {res}         .
+                                                {txt}R-squared         = {res}    0.3907
+                                                {txt}Root MSE          =    {res} .30457
+
+{txt}{ralign 78:(Std. err. adjusted for {res:288} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} liq_linetot{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 6}yd1996 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 6}yd1997 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 6}yd1998 {c |}{col 14}{res}{space 2} .0154088{col 26}{space 2} .0179332{col 37}{space 1}    0.86{col 46}{space 3}0.391{col 54}{space 4}-.0198885{col 67}{space 3} .0507062
+{txt}{space 6}yd1999 {c |}{col 14}{res}{space 2}  .007502{col 26}{space 2} .0205361{col 37}{space 1}    0.37{col 46}{space 3}0.715{col 54}{space 4}-.0329185{col 67}{space 3} .0479226
+{txt}{space 6}yd2000 {c |}{col 14}{res}{space 2} .0151367{col 26}{space 2} .0237594{col 37}{space 1}    0.64{col 46}{space 3}0.525{col 54}{space 4}-.0316281{col 67}{space 3} .0619016
+{txt}{space 6}yd2001 {c |}{col 14}{res}{space 2}-.0548616{col 26}{space 2}  .026124{col 37}{space 1}   -2.10{col 46}{space 3}0.037{col 54}{space 4}-.1062805{col 67}{space 3}-.0034426
+{txt}{space 6}yd2002 {c |}{col 14}{res}{space 2}-.0774757{col 26}{space 2} .0279687{col 37}{space 1}   -2.77{col 46}{space 3}0.006{col 54}{space 4}-.1325256{col 67}{space 3}-.0224258
+{txt}{space 6}yd2003 {c |}{col 14}{res}{space 2}-.1503763{col 26}{space 2} .0297476{col 37}{space 1}   -5.06{col 46}{space 3}0.000{col 54}{space 4}-.2089274{col 67}{space 3}-.0918251
+{txt}{space 3}_Isic_1_2 {c |}{col 14}{res}{space 2}-.1099669{col 26}{space 2} .1115609{col 37}{space 1}   -0.99{col 46}{space 3}0.325{col 54}{space 4}-.3295482{col 67}{space 3} .1096144
+{txt}{space 3}_Isic_1_3 {c |}{col 14}{res}{space 2} -.190793{col 26}{space 2} .0558999{col 37}{space 1}   -3.41{col 46}{space 3}0.001{col 54}{space 4}-.3008187{col 67}{space 3}-.0807674
+{txt}{space 3}_Isic_1_4 {c |}{col 14}{res}{space 2}-.2591054{col 26}{space 2} .0503685{col 37}{space 1}   -5.14{col 46}{space 3}0.000{col 54}{space 4}-.3582438{col 67}{space 3} -.159967
+{txt}{space 3}_Isic_1_5 {c |}{col 14}{res}{space 2}-.1951684{col 26}{space 2} .0685115{col 37}{space 1}   -2.85{col 46}{space 3}0.005{col 54}{space 4}-.3300171{col 67}{space 3}-.0603197
+{txt}{space 3}_Isic_1_6 {c |}{col 14}{res}{space 2}-.1915341{col 26}{space 2} .0512212{col 37}{space 1}   -3.74{col 46}{space 3}0.000{col 54}{space 4}-.2923511{col 67}{space 3}-.0907172
+{txt}{space 3}_Isic_1_7 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 3}_Isic_1_8 {c |}{col 14}{res}{space 2}-.4092081{col 26}{space 2} .0590175{col 37}{space 1}   -6.93{col 46}{space 3}0.000{col 54}{space 4}  -.52537{col 67}{space 3}-.2930461
+{txt}{space 3}_Isic_1_9 {c |}{col 14}{res}{space 2}-.2222776{col 26}{space 2}  .065072{col 37}{space 1}   -3.42{col 46}{space 3}0.001{col 54}{space 4}-.3503564{col 67}{space 3}-.0941987
+{txt}{space 2}_Isic_1_10 {c |}{col 14}{res}{space 2}-.5251751{col 26}{space 2} .0666209{col 37}{space 1}   -7.88{col 46}{space 3}0.000{col 54}{space 4}-.6563026{col 67}{space 3}-.3940476
+{txt}{space 6}cflcl1 {c |}{col 14}{res}{space 2} .1256692{col 26}{space 2} .0450894{col 37}{space 1}    2.79{col 46}{space 3}0.006{col 54}{space 4} .0369213{col 67}{space 3} .2144171
+{txt}{space 4}tanglcl1 {c |}{col 14}{res}{space 2}-.0105193{col 26}{space 2} .0788182{col 37}{space 1}   -0.13{col 46}{space 3}0.894{col 54}{space 4}-.1656543{col 67}{space 3} .1446158
+{txt}{space 4}lasslcl1 {c |}{col 14}{res}{space 2} .0493923{col 26}{space 2}  .011968{col 37}{space 1}    4.13{col 46}{space 3}0.000{col 54}{space 4}  .025836{col 67}{space 3} .0729485
+{txt}{space 6}nwlcl1 {c |}{col 14}{res}{space 2}-.1215418{col 26}{space 2} .0656535{col 37}{space 1}   -1.85{col 46}{space 3}0.065{col 54}{space 4}-.2507653{col 67}{space 3} .0076817
+{txt}{space 6}mblcl1 {c |}{col 14}{res}{space 2}-.0347782{col 26}{space 2}  .004152{col 37}{space 1}   -8.38{col 46}{space 3}0.000{col 54}{space 4}-.0429504{col 67}{space 3} -.026606
+{txt}{space 1}q_salesvar1 {c |}{col 14}{res}{space 2} 1.036619{col 26}{space 2} .4748539{col 37}{space 1}    2.18{col 46}{space 3}0.030{col 54}{space 4} .1019807{col 67}{space 3} 1.971256
+{txt}{space 6}cfvar1 {c |}{col 14}{res}{space 2} -.098393{col 26}{space 2} .0794323{col 37}{space 1}   -1.24{col 46}{space 3}0.216{col 54}{space 4}-.2547368{col 67}{space 3} .0579508
+{txt}{space 7}spind {c |}{col 14}{res}{space 2} .0396662{col 26}{space 2} .0458256{col 37}{space 1}    0.87{col 46}{space 3}0.387{col 54}{space 4}-.0505308{col 67}{space 3} .1298631
+{txt}{space 8}exch {c |}{col 14}{res}{space 2}-.0046848{col 26}{space 2} .0423565{col 37}{space 1}   -0.11{col 46}{space 3}0.912{col 54}{space 4}-.0880535{col 67}{space 3} .0786839
+{txt}{space 4}lfirmage {c |}{col 14}{res}{space 2} -.015999{col 26}{space 2} .0175888{col 37}{space 1}   -0.91{col 46}{space 3}0.364{col 54}{space 4}-.0506184{col 67}{space 3} .0186203
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2} .6792934{col 26}{space 2}  .132376{col 37}{space 1}    5.13{col 46}{space 3}0.000{col 54}{space 4} .4187426{col 67}{space 3} .9398443
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}
+{com}. est store s1
+
+. 
+. xi: regress liq_linetot yd* i.sic_1 cflcl1 tanglcl1 lasslcl1 nwlcl1 mblcl1 q_salesvar1 cfvar1 spind exch lfirmage if randomsample==1 & lineofcredit_rs==1, cluster(gvkey) robust
+{txt}i.sic_1{col 19}_Isic_1_1-10{col 39}(_Isic_1_1 for sic_1==0 omitted)
+{p 0 6 2}note: {bf:yd1996} omitted because of collinearity.{p_end}
+{p 0 6 2}note: {bf:yd2003} omitted because of collinearity.{p_end}
+{p 0 6 2}note: {bf:_Isic_1_7} omitted because of collinearity.{p_end}
+
+Linear regression                               Number of obs     = {res}     1,126
+                                                {txt}{help j_robustsingular:F(23, 233) }       =  {res}        .
+                                                {txt}Prob > F          = {res}         .
+                                                {txt}R-squared         = {res}    0.2928
+                                                {txt}Root MSE          =    {res} .24259
+
+{txt}{ralign 78:(Std. err. adjusted for {res:234} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1} liq_linetot{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 6}yd1996 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 6}yd1997 {c |}{col 14}{res}{space 2} .1237626{col 26}{space 2} .0296234{col 37}{space 1}    4.18{col 46}{space 3}0.000{col 54}{space 4} .0653986{col 67}{space 3} .1821265
+{txt}{space 6}yd1998 {c |}{col 14}{res}{space 2} .1417825{col 26}{space 2} .0279965{col 37}{space 1}    5.06{col 46}{space 3}0.000{col 54}{space 4}  .086624{col 67}{space 3}  .196941
+{txt}{space 6}yd1999 {c |}{col 14}{res}{space 2} .1300441{col 26}{space 2} .0257293{col 37}{space 1}    5.05{col 46}{space 3}0.000{col 54}{space 4} .0793522{col 67}{space 3} .1807359
+{txt}{space 6}yd2000 {c |}{col 14}{res}{space 2} .1395273{col 26}{space 2} .0246508{col 37}{space 1}    5.66{col 46}{space 3}0.000{col 54}{space 4} .0909604{col 67}{space 3} .1880942
+{txt}{space 6}yd2001 {c |}{col 14}{res}{space 2} .0749854{col 26}{space 2} .0234155{col 37}{space 1}    3.20{col 46}{space 3}0.002{col 54}{space 4} .0288523{col 67}{space 3} .1211185
+{txt}{space 6}yd2002 {c |}{col 14}{res}{space 2} .0643485{col 26}{space 2} .0172571{col 37}{space 1}    3.73{col 46}{space 3}0.000{col 54}{space 4} .0303486{col 67}{space 3} .0983485
+{txt}{space 6}yd2003 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 3}_Isic_1_2 {c |}{col 14}{res}{space 2}-.0198422{col 26}{space 2} .0784421{col 37}{space 1}   -0.25{col 46}{space 3}0.801{col 54}{space 4}-.1743886{col 67}{space 3} .1347042
+{txt}{space 3}_Isic_1_3 {c |}{col 14}{res}{space 2}-.1332722{col 26}{space 2} .0477746{col 37}{space 1}   -2.79{col 46}{space 3}0.006{col 54}{space 4}-.2273976{col 67}{space 3}-.0391469
+{txt}{space 3}_Isic_1_4 {c |}{col 14}{res}{space 2}-.1883904{col 26}{space 2} .0449804{col 37}{space 1}   -4.19{col 46}{space 3}0.000{col 54}{space 4}-.2770106{col 67}{space 3}-.0997702
+{txt}{space 3}_Isic_1_5 {c |}{col 14}{res}{space 2}-.1464714{col 26}{space 2} .0527964{col 37}{space 1}   -2.77{col 46}{space 3}0.006{col 54}{space 4}-.2504907{col 67}{space 3}-.0424522
+{txt}{space 3}_Isic_1_6 {c |}{col 14}{res}{space 2}-.1437071{col 26}{space 2} .0429527{col 37}{space 1}   -3.35{col 46}{space 3}0.001{col 54}{space 4}-.2283323{col 67}{space 3}-.0590818
+{txt}{space 3}_Isic_1_7 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 3}_Isic_1_8 {c |}{col 14}{res}{space 2}-.2965624{col 26}{space 2} .0590119{col 37}{space 1}   -5.03{col 46}{space 3}0.000{col 54}{space 4}-.4128274{col 67}{space 3}-.1802974
+{txt}{space 3}_Isic_1_9 {c |}{col 14}{res}{space 2}-.1475285{col 26}{space 2}   .05721{col 37}{space 1}   -2.58{col 46}{space 3}0.011{col 54}{space 4}-.2602435{col 67}{space 3}-.0348134
+{txt}{space 2}_Isic_1_10 {c |}{col 14}{res}{space 2}-.2193157{col 26}{space 2} .0450702{col 37}{space 1}   -4.87{col 46}{space 3}0.000{col 54}{space 4}-.3081129{col 67}{space 3}-.1305186
+{txt}{space 6}cflcl1 {c |}{col 14}{res}{space 2} .1489351{col 26}{space 2} .0569085{col 37}{space 1}    2.62{col 46}{space 3}0.009{col 54}{space 4} .0368141{col 67}{space 3} .2610561
+{txt}{space 4}tanglcl1 {c |}{col 14}{res}{space 2}-.0750698{col 26}{space 2} .0701092{col 37}{space 1}   -1.07{col 46}{space 3}0.285{col 54}{space 4}-.2131988{col 67}{space 3} .0630593
+{txt}{space 4}lasslcl1 {c |}{col 14}{res}{space 2} .0139139{col 26}{space 2} .0097492{col 37}{space 1}    1.43{col 46}{space 3}0.155{col 54}{space 4}-.0052939{col 67}{space 3} .0331217
+{txt}{space 6}nwlcl1 {c |}{col 14}{res}{space 2}-.1519738{col 26}{space 2} .0604249{col 37}{space 1}   -2.52{col 46}{space 3}0.013{col 54}{space 4}-.2710228{col 67}{space 3}-.0329248
+{txt}{space 6}mblcl1 {c |}{col 14}{res}{space 2} -.045907{col 26}{space 2} .0051392{col 37}{space 1}   -8.93{col 46}{space 3}0.000{col 54}{space 4}-.0560323{col 67}{space 3}-.0357816
+{txt}{space 1}q_salesvar1 {c |}{col 14}{res}{space 2}-.0128636{col 26}{space 2} .4329897{col 37}{space 1}   -0.03{col 46}{space 3}0.976{col 54}{space 4}-.8659388{col 67}{space 3} .8402116
+{txt}{space 6}cfvar1 {c |}{col 14}{res}{space 2}-.3931607{col 26}{space 2} .2471559{col 37}{space 1}   -1.59{col 46}{space 3}0.113{col 54}{space 4}-.8801067{col 67}{space 3} .0937853
+{txt}{space 7}spind {c |}{col 14}{res}{space 2}-.0108584{col 26}{space 2} .0388803{col 37}{space 1}   -0.28{col 46}{space 3}0.780{col 54}{space 4}-.0874602{col 67}{space 3} .0657434
+{txt}{space 8}exch {c |}{col 14}{res}{space 2} .0080715{col 26}{space 2} .0401734{col 37}{space 1}    0.20{col 46}{space 3}0.841{col 54}{space 4}-.0710779{col 67}{space 3}  .087221
+{txt}{space 4}lfirmage {c |}{col 14}{res}{space 2}-.0256027{col 26}{space 2} .0159654{col 37}{space 1}   -1.60{col 46}{space 3}0.110{col 54}{space 4}-.0570578{col 67}{space 3} .0058523
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2} .9468109{col 26}{space 2} .1094487{col 37}{space 1}    8.65{col 46}{space 3}0.000{col 54}{space 4} .7311754{col 67}{space 3} 1.162446
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}
+{com}. est store s2
+
+. 
+. xi: regress liq_lineun yd* i.sic_1 cflcl1 tanglcl1 lasslcl1 nwlcl1 mblcl1 q_salesvar1 cfvar1 spind exch lfirmage if randomsample==1, cluster(gvkey) robust
+{txt}i.sic_1{col 19}_Isic_1_1-10{col 39}(_Isic_1_1 for sic_1==0 omitted)
+{p 0 6 2}note: {bf:yd1996} omitted because of collinearity.{p_end}
+{p 0 6 2}note: {bf:yd2003} omitted because of collinearity.{p_end}
+{p 0 6 2}note: {bf:_Isic_1_7} omitted because of collinearity.{p_end}
+
+Linear regression                               Number of obs     = {res}     1,496
+                                                {txt}{help j_robustsingular:F(23, 287) }       =  {res}        .
+                                                {txt}Prob > F          = {res}         .
+                                                {txt}R-squared         = {res}    0.3584
+                                                {txt}Root MSE          =    {res} .30087
+
+{txt}{ralign 78:(Std. err. adjusted for {res:288} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}  liq_lineun{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 6}yd1996 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 6}yd1997 {c |}{col 14}{res}{space 2} .1324018{col 26}{space 2} .0286838{col 37}{space 1}    4.62{col 46}{space 3}0.000{col 54}{space 4} .0759446{col 67}{space 3} .1888591
+{txt}{space 6}yd1998 {c |}{col 14}{res}{space 2} .1327165{col 26}{space 2} .0278496{col 37}{space 1}    4.77{col 46}{space 3}0.000{col 54}{space 4} .0779012{col 67}{space 3} .1875318
+{txt}{space 6}yd1999 {c |}{col 14}{res}{space 2}  .105988{col 26}{space 2} .0240749{col 37}{space 1}    4.40{col 46}{space 3}0.000{col 54}{space 4} .0586024{col 67}{space 3} .1533737
+{txt}{space 6}yd2000 {c |}{col 14}{res}{space 2} .0999705{col 26}{space 2} .0242774{col 37}{space 1}    4.12{col 46}{space 3}0.000{col 54}{space 4} .0521862{col 67}{space 3} .1477548
+{txt}{space 6}yd2001 {c |}{col 14}{res}{space 2} .0682407{col 26}{space 2} .0207171{col 37}{space 1}    3.29{col 46}{space 3}0.001{col 54}{space 4} .0274639{col 67}{space 3} .1090176
+{txt}{space 6}yd2002 {c |}{col 14}{res}{space 2} .0427716{col 26}{space 2} .0165478{col 37}{space 1}    2.58{col 46}{space 3}0.010{col 54}{space 4} .0102012{col 67}{space 3} .0753419
+{txt}{space 6}yd2003 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 3}_Isic_1_2 {c |}{col 14}{res}{space 2}-.0672917{col 26}{space 2} .1228027{col 37}{space 1}   -0.55{col 46}{space 3}0.584{col 54}{space 4}-.3089998{col 67}{space 3} .1744164
+{txt}{space 3}_Isic_1_3 {c |}{col 14}{res}{space 2}-.1132628{col 26}{space 2} .0891423{col 37}{space 1}   -1.27{col 46}{space 3}0.205{col 54}{space 4}-.2887183{col 67}{space 3} .0621927
+{txt}{space 3}_Isic_1_4 {c |}{col 14}{res}{space 2}-.1768304{col 26}{space 2} .0855436{col 37}{space 1}   -2.07{col 46}{space 3}0.040{col 54}{space 4}-.3452027{col 67}{space 3} -.008458
+{txt}{space 3}_Isic_1_5 {c |}{col 14}{res}{space 2}-.1344872{col 26}{space 2} .1024975{col 37}{space 1}   -1.31{col 46}{space 3}0.191{col 54}{space 4}-.3362293{col 67}{space 3} .0672549
+{txt}{space 3}_Isic_1_6 {c |}{col 14}{res}{space 2}-.1487838{col 26}{space 2} .0850932{col 37}{space 1}   -1.75{col 46}{space 3}0.081{col 54}{space 4}-.3162698{col 67}{space 3} .0187021
+{txt}{space 3}_Isic_1_7 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 3}_Isic_1_8 {c |}{col 14}{res}{space 2}-.3228748{col 26}{space 2} .0904638{col 37}{space 1}   -3.57{col 46}{space 3}0.000{col 54}{space 4}-.5009314{col 67}{space 3}-.1448182
+{txt}{space 3}_Isic_1_9 {c |}{col 14}{res}{space 2}-.1301798{col 26}{space 2} .0946581{col 37}{space 1}   -1.38{col 46}{space 3}0.170{col 54}{space 4}-.3164919{col 67}{space 3} .0561323
+{txt}{space 2}_Isic_1_10 {c |}{col 14}{res}{space 2}-.3279651{col 26}{space 2} .0937991{col 37}{space 1}   -3.50{col 46}{space 3}0.001{col 54}{space 4}-.5125865{col 67}{space 3}-.1433437
+{txt}{space 6}cflcl1 {c |}{col 14}{res}{space 2} .0999581{col 26}{space 2} .0411813{col 37}{space 1}    2.43{col 46}{space 3}0.016{col 54}{space 4} .0189024{col 67}{space 3} .1810139
+{txt}{space 4}tanglcl1 {c |}{col 14}{res}{space 2}-.0100202{col 26}{space 2} .0747024{col 37}{space 1}   -0.13{col 46}{space 3}0.893{col 54}{space 4}-.1570542{col 67}{space 3} .1370138
+{txt}{space 4}lasslcl1 {c |}{col 14}{res}{space 2} .0503624{col 26}{space 2}  .011461{col 37}{space 1}    4.39{col 46}{space 3}0.000{col 54}{space 4} .0278042{col 67}{space 3} .0729207
+{txt}{space 6}nwlcl1 {c |}{col 14}{res}{space 2}-.0584538{col 26}{space 2}  .059937{col 37}{space 1}   -0.98{col 46}{space 3}0.330{col 54}{space 4}-.1764256{col 67}{space 3}  .059518
+{txt}{space 6}mblcl1 {c |}{col 14}{res}{space 2}-.0287806{col 26}{space 2} .0039734{col 37}{space 1}   -7.24{col 46}{space 3}0.000{col 54}{space 4}-.0366013{col 67}{space 3}-.0209599
+{txt}{space 1}q_salesvar1 {c |}{col 14}{res}{space 2} 1.187526{col 26}{space 2} .4902158{col 37}{space 1}    2.42{col 46}{space 3}0.016{col 54}{space 4} .2226515{col 67}{space 3}   2.1524
+{txt}{space 6}cfvar1 {c |}{col 14}{res}{space 2}-.0392165{col 26}{space 2} .0686303{col 37}{space 1}   -0.57{col 46}{space 3}0.568{col 54}{space 4} -.174299{col 67}{space 3} .0958661
+{txt}{space 7}spind {c |}{col 14}{res}{space 2} .0065928{col 26}{space 2} .0454927{col 37}{space 1}    0.14{col 46}{space 3}0.885{col 54}{space 4}-.0829488{col 67}{space 3} .0961345
+{txt}{space 8}exch {c |}{col 14}{res}{space 2}-.0427164{col 26}{space 2} .0408206{col 37}{space 1}   -1.05{col 46}{space 3}0.296{col 54}{space 4}-.1230621{col 67}{space 3} .0376293
+{txt}{space 4}lfirmage {c |}{col 14}{res}{space 2}-.0029841{col 26}{space 2} .0170464{col 37}{space 1}   -0.18{col 46}{space 3}0.861{col 54}{space 4} -.036536{col 67}{space 3} .0305677
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2}  .364837{col 26}{space 2} .1426403{col 37}{space 1}    2.56{col 46}{space 3}0.011{col 54}{space 4} .0840831{col 67}{space 3} .6455908
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}
+{com}. est store s3
+
+. 
+. xi: regress liq_lineun yd* i.sic_1 cflcl1 tanglcl1 lasslcl1 nwlcl1 mblcl1 q_salesvar1 cfvar1 spind exch lfirmage if randomsample==1 & lineofcredit_rs==1, cluster(gvkey) robust
+{txt}i.sic_1{col 19}_Isic_1_1-10{col 39}(_Isic_1_1 for sic_1==0 omitted)
+{p 0 6 2}note: {bf:yd1996} omitted because of collinearity.{p_end}
+{p 0 6 2}note: {bf:yd2003} omitted because of collinearity.{p_end}
+{p 0 6 2}note: {bf:_Isic_1_7} omitted because of collinearity.{p_end}
+
+Linear regression                               Number of obs     = {res}     1,124
+                                                {txt}{help j_robustsingular:F(23, 233) }       =  {res}        .
+                                                {txt}Prob > F          = {res}         .
+                                                {txt}R-squared         = {res}    0.2360
+                                                {txt}Root MSE          =    {res} .27138
+
+{txt}{ralign 78:(Std. err. adjusted for {res:234} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}  liq_lineun{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 6}yd1996 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 6}yd1997 {c |}{col 14}{res}{space 2} .1045535{col 26}{space 2} .0308176{col 37}{space 1}    3.39{col 46}{space 3}0.001{col 54}{space 4} .0438367{col 67}{space 3} .1652702
+{txt}{space 6}yd1998 {c |}{col 14}{res}{space 2} .1068074{col 26}{space 2} .0309629{col 37}{space 1}    3.45{col 46}{space 3}0.001{col 54}{space 4} .0458044{col 67}{space 3} .1678104
+{txt}{space 6}yd1999 {c |}{col 14}{res}{space 2} .0704834{col 26}{space 2} .0286468{col 37}{space 1}    2.46{col 46}{space 3}0.015{col 54}{space 4} .0140437{col 67}{space 3} .1269232
+{txt}{space 6}yd2000 {c |}{col 14}{res}{space 2} .0630559{col 26}{space 2} .0296211{col 37}{space 1}    2.13{col 46}{space 3}0.034{col 54}{space 4} .0046964{col 67}{space 3} .1214154
+{txt}{space 6}yd2001 {c |}{col 14}{res}{space 2} .0441115{col 26}{space 2} .0257079{col 37}{space 1}    1.72{col 46}{space 3}0.088{col 54}{space 4}-.0065382{col 67}{space 3} .0947612
+{txt}{space 6}yd2002 {c |}{col 14}{res}{space 2} .0295622{col 26}{space 2}  .019812{col 37}{space 1}    1.49{col 46}{space 3}0.137{col 54}{space 4}-.0094713{col 67}{space 3} .0685957
+{txt}{space 6}yd2003 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 3}_Isic_1_2 {c |}{col 14}{res}{space 2}-.0021046{col 26}{space 2} .1055424{col 37}{space 1}   -0.02{col 46}{space 3}0.984{col 54}{space 4}-.2100441{col 67}{space 3} .2058349
+{txt}{space 3}_Isic_1_3 {c |}{col 14}{res}{space 2}-.0722659{col 26}{space 2} .0843389{col 37}{space 1}   -0.86{col 46}{space 3}0.392{col 54}{space 4}-.2384302{col 67}{space 3} .0938983
+{txt}{space 3}_Isic_1_4 {c |}{col 14}{res}{space 2} -.121333{col 26}{space 2} .0813902{col 37}{space 1}   -1.49{col 46}{space 3}0.137{col 54}{space 4}-.2816878{col 67}{space 3} .0390219
+{txt}{space 3}_Isic_1_5 {c |}{col 14}{res}{space 2}-.1022293{col 26}{space 2} .0938331{col 37}{space 1}   -1.09{col 46}{space 3}0.277{col 54}{space 4}-.2870991{col 67}{space 3} .0826405
+{txt}{space 3}_Isic_1_6 {c |}{col 14}{res}{space 2}-.1228269{col 26}{space 2} .0782916{col 37}{space 1}   -1.57{col 46}{space 3}0.118{col 54}{space 4}-.2770768{col 67}{space 3} .0314231
+{txt}{space 3}_Isic_1_7 {c |}{col 14}{res}{space 2}        0{col 26}{txt}  (omitted)
+{space 3}_Isic_1_8 {c |}{col 14}{res}{space 2}-.2457492{col 26}{space 2} .0891777{col 37}{space 1}   -2.76{col 46}{space 3}0.006{col 54}{space 4}-.4214469{col 67}{space 3}-.0700514
+{txt}{space 3}_Isic_1_9 {c |}{col 14}{res}{space 2}-.0815766{col 26}{space 2} .0879745{col 37}{space 1}   -0.93{col 46}{space 3}0.355{col 54}{space 4}-.2549037{col 67}{space 3} .0917504
+{txt}{space 2}_Isic_1_10 {c |}{col 14}{res}{space 2}-.0057952{col 26}{space 2} .0797326{col 37}{space 1}   -0.07{col 46}{space 3}0.942{col 54}{space 4}-.1628842{col 67}{space 3} .1512937
+{txt}{space 6}cflcl1 {c |}{col 14}{res}{space 2} .1625713{col 26}{space 2} .0546266{col 37}{space 1}    2.98{col 46}{space 3}0.003{col 54}{space 4} .0549462{col 67}{space 3} .2701965
+{txt}{space 4}tanglcl1 {c |}{col 14}{res}{space 2}-.0801223{col 26}{space 2} .0755547{col 37}{space 1}   -1.06{col 46}{space 3}0.290{col 54}{space 4}-.2289801{col 67}{space 3} .0687354
+{txt}{space 4}lasslcl1 {c |}{col 14}{res}{space 2} .0262891{col 26}{space 2} .0108462{col 37}{space 1}    2.42{col 46}{space 3}0.016{col 54}{space 4} .0049198{col 67}{space 3} .0476583
+{txt}{space 6}nwlcl1 {c |}{col 14}{res}{space 2}-.0445336{col 26}{space 2}  .061253{col 37}{space 1}   -0.73{col 46}{space 3}0.468{col 54}{space 4}-.1652141{col 67}{space 3} .0761468
+{txt}{space 6}mblcl1 {c |}{col 14}{res}{space 2}-.0378023{col 26}{space 2}  .005532{col 37}{space 1}   -6.83{col 46}{space 3}0.000{col 54}{space 4}-.0487015{col 67}{space 3}-.0269031
+{txt}{space 1}q_salesvar1 {c |}{col 14}{res}{space 2} .3017915{col 26}{space 2} .4763013{col 37}{space 1}    0.63{col 46}{space 3}0.527{col 54}{space 4}-.6366162{col 67}{space 3} 1.240199
+{txt}{space 6}cfvar1 {c |}{col 14}{res}{space 2}-.2350276{col 26}{space 2} .2525605{col 37}{space 1}   -0.93{col 46}{space 3}0.353{col 54}{space 4}-.7326216{col 67}{space 3} .2625665
+{txt}{space 7}spind {c |}{col 14}{res}{space 2}-.0314298{col 26}{space 2} .0407647{col 37}{space 1}   -0.77{col 46}{space 3}0.441{col 54}{space 4}-.1117444{col 67}{space 3} .0488848
+{txt}{space 8}exch {c |}{col 14}{res}{space 2}-.0461343{col 26}{space 2} .0437795{col 37}{space 1}   -1.05{col 46}{space 3}0.293{col 54}{space 4}-.1323886{col 67}{space 3}   .04012
+{txt}{space 4}lfirmage {c |}{col 14}{res}{space 2}-.0094029{col 26}{space 2} .0164708{col 37}{space 1}   -0.57{col 46}{space 3}0.569{col 54}{space 4}-.0418537{col 67}{space 3}  .023048
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2} .6766514{col 26}{space 2}  .137442{col 37}{space 1}    4.92{col 46}{space 3}0.000{col 54}{space 4} .4058635{col 67}{space 3} .9474392
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}
+{com}. est store s4
+
+. 
+. * ssc install estout, replace
+
+. esttab s1 s2 s3 s4 using /Users/yukerui/Desktop/table3.csv, b(3) se(3) compress nogap star(* 0.05 ** 0.01) ar2 r2  
+{res}{txt}(output written to {browse  `"/Users/yukerui/Desktop/table3.csv"'})
+
+{com}. save "/Users/yukerui/Desktop/12.dta" 
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/12.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Calculate the number of firms 
+
+. use "/Users/yukerui/Desktop/12.dta", clear 
+
+. preserve 
+
+. duplicates drop gvkey, force
+
+{p 0 4}{txt}Duplicates in terms of {res} gvkey{p_end}
+
+{txt}(23,944 observations deleted)
+
+{com}. drop if randomsample == 0
+{txt}(4,205 observations deleted)
+
+{com}. drop if lineofcredit_rs == 0
+{txt}(80 observations deleted)
+
+{com}. restore
+
+. 
+. 
+. * The end of table3 output
+
+. use "/Users/yukerui/Desktop/main data.dta", clear
+
+. destring gvkey, replace
+{txt}gvkey: all characters numeric; {res}replaced {txt}as {res}long
+
+{com}. sort gvkey fyear
+
+. xtset gvkey fyear
+{res}
+{col 1}{txt:Panel variable: }{res:gvkey}{txt: (unbalanced)}
+{p 1 16 2}{txt:Time variable: }{res:fyear}{txt:, }{res:{bind:1995}}{txt: to }{res:{bind:2004}}{txt:, but with gaps}{p_end}
+{txt}{col 10}Delta: {res}1 unit
+
+{com}. gen EBITDA_asset_cash =  oibdp / (at - che)
+{txt}(14,961 missing values generated)
+
+{com}. gen cflcl1 = L.EBITDA_asset_cash
+{txt}(31,888 missing values generated)
+
+{com}. sort gvkey fyear
+
+. merge 1:1 gvkey fyear using /Users/yukerui/Desktop/sufi_rfs_linesofcredit20070221data.dta
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}          91,088
+{txt}{col 9}from master{col 30}{res}          91,088{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               0{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          28,447{txt}  (_merge==3)
+{col 5}{hline 41}
+
+{com}. keep if _merge == 3
+{txt}(91,088 observations deleted)
+
+{com}. 
+. * Output figure 1
+
+. centile cflcl1, centile(10 20 30 40 50 60 70 80 90 100)
+
+{txt}{col 56}   Binom. interp.   
+    Variable {c |}       Obs  Percentile    Centile        [95% conf. interval]
+{hline 13}{c +}{hline 61}
+      cflcl1 {c |}{col 14}{res}    28,447{col 29}     10{col 39}-.4028109{col 55}-.4312973{col 67}-.3731316{txt}
+             {c |}{res}{col 29}     20{col 39}-.0210496{col 55}-.0281168{col 67} -.015246{txt}
+             {c |}{res}{col 29}     30{col 39} .0627866{col 55} .0600412{col 67} .0651519{txt}
+             {c |}{res}{col 29}     40{col 39}  .098319{col 55} .0966793{col 67} .1000149{txt}
+             {c |}{res}{col 29}     50{col 39} .1246763{col 55} .1231893{col 67} .1259982{txt}
+             {c |}{res}{col 29}     60{col 39} .1505305{col 55}  .148864{col 67} .1520582{txt}
+             {c |}{res}{col 29}     70{col 39} .1805915{col 55} .1785377{col 67} .1824991{txt}
+             {c |}{res}{col 29}     80{col 39}  .221927{col 55} .2192558{col 67} .2244382{txt}
+             {c |}{res}{col 29}     90{col 39} .3017597{col 55} .2966923{col 67}  .306364{txt}
+             {c |}{res}{col 29}    100{col 39}  66.2449{col 55}  66.2449{col 67}  66.2449{txt}*
+
+* Lower (upper) confidence limit held at minimum (maximum) of sample
+
+{com}. local x1 = r(c_1)
+
+. local x2 = r(c_2)
+
+. local x3 = r(c_3)
+
+. local x4 = r(c_4)
+
+. local x5 = r(c_5)
+
+. local x6 = r(c_6)
+
+. local x7 = r(c_7)
+
+. local x8 = r(c_8)
+
+. local x9 = r(c_9)
+
+. local x10 = r(c_10)
+
+. 
+. egen group = cut(cflcl1), at(`x1' `x2' `x3' `x4' `x5' `x6' `x7' `x8' `x9' `x10')
+{txt}(2,844 missing values generated)
+
+{com}. gen cash_asset = che / at
+
+. 
+. * When the abscissa is equal to 1, lineofcredit is equal to .4120956 and cash_asset is equal to .5557726
+
+. summarize lineofcredit if cflcl1 < -.402810
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+lineofcredit {c |}{res}      2,844    .4120956    .4922987          0          1
+
+{com}. summarize cash_asset if cflcl1 < -.402810
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cash_asset {c |}{res}      2,844    .5557726    .2828423          0          1
+
+{com}. tabstat cash_asset, by(group) 
+
+{txt}Summary for variables: cash_asset
+Group variable: group 
+
+{ralign 8:group} {...}
+{c |}      Mean
+{hline 9}{c +}{hline 10}
+{ralign 8:-.402810} {...}
+{c |}{...}
+ {res} .2724983
+{txt}{ralign 8:-.021049} {...}
+{c |}{...}
+ {res} .1451096
+{txt}{ralign 8:.0627865} {...}
+{c |}{...}
+ {res} .0900354
+{txt}{ralign 8:.0983190} {...}
+{c |}{...}
+ {res} .0791666
+{txt}{ralign 8:.1246762} {...}
+{c |}{...}
+ {res} .0839887
+{txt}{ralign 8:.1505305} {...}
+{c |}{...}
+ {res} .0940812
+{txt}{ralign 8:.1805914} {...}
+{c |}{...}
+ {res} .1171419
+{txt}{ralign 8:.2219270} {...}
+{c |}{...}
+ {res} .1629214
+{txt}{ralign 8:.3017596} {...}
+{c |}{...}
+ {res} .3214326
+{txt}{hline 9}{c +}{hline 10}
+{ralign 8:Total} {...}
+{c |}{...}
+ {res} .1518157
+{txt}{hline 9}{c BT}{hline 10}
+
+{com}. tabstat lineofcredit, by(group)
+
+{txt}Summary for variables: lineofcredit
+Group variable: group 
+
+{ralign 8:group} {...}
+{c |}      Mean
+{hline 9}{c +}{hline 10}
+{ralign 8:-.402810} {...}
+{c |}{...}
+ {res} .6688928
+{txt}{ralign 8:-.021049} {...}
+{c |}{...}
+ {res} .8513181
+{txt}{ralign 8:.0627865} {...}
+{c |}{...}
+ {res} .9226714
+{txt}{ralign 8:.0983190} {...}
+{c |}{...}
+ {res} .9289733
+{txt}{ralign 8:.1246762} {...}
+{c |}{...}
+ {res} .9342707
+{txt}{ralign 8:.1505305} {...}
+{c |}{...}
+ {res} .9212654
+{txt}{ralign 8:.1805914} {...}
+{c |}{...}
+ {res} .9012302
+{txt}{ralign 8:.2219270} {...}
+{c |}{...}
+ {res} .8727592
+{txt}{ralign 8:.3017596} {...}
+{c |}{...}
+ {res} .7556259
+{txt}{hline 9}{c +}{hline 10}
+{ralign 8:Total} {...}
+{c |}{...}
+ {res} .8618912
+{txt}{hline 9}{c BT}{hline 10}
+
+{com}. clear
+
+. 
+. set obs 10
+{txt}{p}
+Number of observations ({bf:_N}) was 0,
+now 10.
+{p_end}
+
+{com}. input X A B
+
+     {txt}        X          A          B
+  1{com}. 1 .5557726  .4120956 
+{txt}  2{com}. 2 .2724983  .6688928
+{txt}  3{com}. 3 .1451096  .8513181
+{txt}  4{com}. 4 .0900354  .9226714
+{txt}  5{com}. 5 .0791666  .9289733
+{txt}  6{com}. 6 .0839887  .9342707
+{txt}  7{com}. 7 .0940812  .9212654
+{txt}  8{com}. 8 .1171419  .9012302
+{txt}  9{com}. 9 .1629214  .8727592
+{txt} 10{com}. 10 .3214326  .7556259
+
+. 
+. twoway (connected A X, mcolor(black) msymbol(lgx) lcolor(black) lpattern(tight_dot)) (connected B X, yaxis(2) mcolor(black) msymbol(square) lcolor(black) lpattern(solid)), ytitle("{c -(}bf:Cash/assets{c )-}") ylabel(, format(%9.1f) grid glcolor(black)) ytitle("{c -(}bf:Fraction with line of credit){c )-}", axis(2)) ylabel(0(0.1)1, format(%9.1f) nogrid glcolor(black) axis(2)) xtitle("{c -(}bf:Deciles of EBITDA/(assets-cash){c )-}") xlabel(0(1)10, nogrid) legend(order(1 "Average cash/assets (left axis)" 2 "Fraction withn line of credit (right axis)") position(6)) plotregion(lcolor(black))
+{res}
+{com}. * Make changes to the picture in Stata
+
+. graph save "Graph" "/Users/yukerui/Desktop/figure1.gph"
+{res}{txt}file {bf:/Users/yukerui/Desktop/figure1.gph} saved
+
+{com}. * The end of paper 1 replication
+
+. 
+. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}/Users/yukerui/Desktop/paper1 replication logfile.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res} 6 Feb 2024, 02:51:44
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

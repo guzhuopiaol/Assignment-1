@@ -1,0 +1,22 @@
+{\rtf1\fs24
+\trowd\trgaph75\trleft-75\intbl\trqc\clbrdrt\brdrs\cellx1872\clbrdrt\brdrs\cellx4608
+\ql \cell\qc (1)\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx1872\cellx4608
+\trowd\trgaph75\trleft-75\trqc\clbrdrb\brdrs\cellx1872\clbrdrb\brdrs\cellx4608
+\ql VARIABLES\cell\qc bnet_debt_issuance\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx1872\cellx4608
+\ql \cell\qc \cell\row
+\ql viol\cell\qc 25.68**\cell\row
+\ql \cell\qc (10.58)\cell\row
+\ql lviol\cell\qc -74.28***\cell\row
+\ql \cell\qc (10.95)\cell\row
+\ql Constant\cell\qc -0.704\cell\row
+\ql \cell\qc (0.751)\cell\row
+\ql \cell\qc \cell\row
+\ql Observations\cell\qc 105,673\cell\row
+\trowd\trgaph75\trleft-75\trqc\trbrdrb\brdrs\clbrdrb\brdrs\cellx1872\clbrdrb\brdrs\cellx4608
+\ql R-squared\cell\qc 0.004\cell\row
+\pard\qc
+Robust standard errors in parentheses\par
+*** p<0.01, ** p<0.05, * p<0.1\par
+}

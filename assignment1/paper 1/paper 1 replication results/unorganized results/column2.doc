@@ -1,0 +1,63 @@
+{\rtf1\fs24
+\trowd\trgaph75\trleft-75\intbl\trqc\clbrdrt\brdrs\cellx1872\clbrdrt\brdrs\cellx4176
+\ql \cell\qc (1)\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx1872\cellx4176
+\trowd\trgaph75\trleft-75\trqc\clbrdrb\brdrs\cellx1872\clbrdrb\brdrs\cellx4176
+\ql VARIABLES\cell\qc lineofcredit_rs\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx1872\cellx4176
+\ql \cell\qc \cell\row
+\ql yd1998\cell\qc 0.00758\cell\row
+\ql \cell\qc (0.0273)\cell\row
+\ql yd1999\cell\qc -0.0202\cell\row
+\ql \cell\qc (0.0333)\cell\row
+\ql yd2000\cell\qc -0.00835\cell\row
+\ql \cell\qc (0.0401)\cell\row
+\ql yd2001\cell\qc -0.0454\cell\row
+\ql \cell\qc (0.0438)\cell\row
+\ql yd2002\cell\qc -0.0431\cell\row
+\ql \cell\qc (0.0455)\cell\row
+\ql yd2003\cell\qc -0.115**\cell\row
+\ql \cell\qc (0.0541)\cell\row
+\ql _Isic_1_2\cell\qc -0.868***\cell\row
+\ql \cell\qc (0.0170)\cell\row
+\ql _Isic_1_3\cell\qc -0.956***\cell\row
+\ql \cell\qc (0.0119)\cell\row
+\ql _Isic_1_4\cell\qc -0.987***\cell\row
+\ql \cell\qc (0.00977)\cell\row
+\ql _Isic_1_5\cell\qc -0.910***\cell\row
+\ql \cell\qc (0.0155)\cell\row
+\ql _Isic_1_6\cell\qc -0.950***\cell\row
+\ql \cell\qc (0.0127)\cell\row
+\ql _Isic_1_8\cell\qc -0.953***\cell\row
+\ql \cell\qc (0.0113)\cell\row
+\ql _Isic_1_9\cell\qc -0.914***\cell\row
+\ql \cell\qc (0.0152)\cell\row
+\ql _Isic_1_10\cell\qc -0.831***\cell\row
+\ql \cell\qc (0.0203)\cell\row
+\ql cflcl1\cell\qc 0.158**\cell\row
+\ql \cell\qc (0.0640)\cell\row
+\ql tanglcl1\cell\qc 0.0612\cell\row
+\ql \cell\qc (0.0922)\cell\row
+\ql lasslcl1\cell\qc 0.0477***\cell\row
+\ql \cell\qc (0.0172)\cell\row
+\ql nwlcl1\cell\qc -0.0415\cell\row
+\ql \cell\qc (0.0765)\cell\row
+\ql mblcl1\cell\qc -0.0240***\cell\row
+\ql \cell\qc (0.00573)\cell\row
+\ql q_salesvar1\cell\qc 3.386***\cell\row
+\ql \cell\qc (0.880)\cell\row
+\ql cfvar1\cell\qc -0.286**\cell\row
+\ql \cell\qc (0.136)\cell\row
+\ql spind\cell\qc 0.0676\cell\row
+\ql \cell\qc (0.0669)\cell\row
+\ql exch\cell\qc -0.0381\cell\row
+\ql \cell\qc (0.0518)\cell\row
+\ql lfirmage\cell\qc -0.00249\cell\row
+\ql \cell\qc (0.0213)\cell\row
+\ql \cell\qc \cell\row
+\trowd\trgaph75\trleft-75\trqc\trbrdrb\brdrs\clbrdrb\brdrs\cellx1872\clbrdrb\brdrs\cellx4176
+\ql Observations\cell\qc 1,498\cell\row
+\pard\qc
+Robust standard errors in parentheses\par
+*** p<0.01, ** p<0.05, * p<0.1\par
+}

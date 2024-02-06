@@ -1,0 +1,1656 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}/Users/yukerui/Desktop/paper 2 log file.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 6 Feb 2024, 02:26:19
+
+{com}. * Repication of paper 2
+
+. * Replicate summary statistics
+
+. * Clean sufi database
+
+. use "/Users/yukerui/Desktop/cstatviolations_nss_20090701.dta", clear
+
+. gen year = substr(datadate, length(datadate)-3, 4)
+
+. gen day = substr(datadate, length(datadate)-5, 2)
+
+. gen month = substr(datadate, 1, 2)
+
+. destring year, replace
+{txt}year: all characters numeric; {res}replaced {txt}as {res}int
+
+{com}. destring month, replace
+{txt}month: all characters numeric; {res}replaced {txt}as {res}byte
+
+{com}. destring day, replace
+{txt}day: all characters numeric; {res}replaced {txt}as {res}byte
+
+{com}. sort gvkey year month day
+
+. save "/Users/yukerui/Desktop/cstatviolations_nss_20090701.dta", replace
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/cstatviolations_nss_20090701.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Clean item 10 annual data
+
+. use "/Users/yukerui/Desktop/item10.dta", clear
+
+. drop datadate indfmt consol popsrc datafmt curcd costat
+
+. destring gvkey, replace
+{txt}gvkey: all characters numeric; {res}replaced {txt}as {res}long
+
+{com}. 
+. * Convert annual data to quarterly data
+
+. sort gvkey fyear
+
+. expand 4 if _n == 1 | (gvkey != gvkey[_n-1] | fyear != fyear[_n-1])
+{txt}(425,403 observations created)
+
+{com}. bysort gvkey fyear: gen fqtr = _n
+
+. by gvkey fyear: gen pstklq = pstkl[1]
+{txt}(59,260 missing values generated)
+
+{com}. sort gvkey fyear fqtr
+
+. save "/Users/yukerui/Desktop/item10.dta", replace
+{txt}{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/item10.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Clean quarterly data and construct variables
+
+. use "/Users/yukerui/Desktop/h2jsxds0dwxhuwxp.dta", clear
+
+. destring gvkey, replace
+{txt}gvkey: all characters numeric; {res}replaced {txt}as {res}long
+
+{com}. drop if missing(datacqtr)
+{txt}(1,002 observations deleted)
+
+{com}. gen fyear = fyearq
+
+. sort gvkey fyear fqtr
+
+. merge 1:1 gvkey fyear fqtr using /Users/yukerui/Desktop/item10.dta
+{res}{txt}{p 0 7 2}
+(variable
+{bf:fyear} was {bf:float}, now {bf:double} to accommodate using data's values)
+{p_end}
+
+{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}         126,503
+{txt}{col 9}from master{col 30}{res}         106,558{txt}  (_merge==1)
+{col 9}from using{col 30}{res}          19,945{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}         547,259{txt}  (_merge==3)
+{col 5}{hline 41}
+
+{com}. table _merge
+{res}
+{smcl}
+{reset}{...}
+{hline 26}{c -}{c TT}{c -}{c -}{hline 9}
+{space 26} {c |}  Frequency
+{hline 26}{c -}{c +}{c -}{c -}{hline 9}
+Matching result from merge {c |}  {space 9}
+  Master only (1){space 9} {c |}  {space 2}{result:106,558}
+  Using only (2){space 10} {c |}  {space 3}{result:19,945}
+  Matched (3){space 13} {c |}  {space 2}{result:547,259}
+  Total{space 19} {c |}  {space 2}{result:673,762}
+{hline 26}{c -}{c BT}{c -}{c -}{hline 9}
+
+{com}. drop if _merge == 2
+{txt}(19,945 observations deleted)
+
+{com}. 
+. * Set panel data
+
+. sort gvkey fyear fqtr
+
+. gen qdate = yq(fyearq, fqtr)
+
+. tsset gvkey qdate
+{res}
+{col 1}{txt:Panel variable: }{res:gvkey}{txt: (unbalanced)}
+{p 1 16 2}{txt:Time variable: }{res:qdate}{txt:, }{res:{bind:132}}{txt: to }{res:{bind:190}}{txt:, but with gaps}{p_end}
+{txt}{col 10}Delta: {res}1 unit
+
+{com}. 
+. * Calculate capital structure variable
+
+. * Net debt issuance (basis points)
+
+. gen book_debt = dlttq + dlcq
+{txt}(137,410 missing values generated)
+
+{com}. gen net_debt_issuance = (book_debt - L.book_debt) * 10000 / L.atq
+{txt}(182,756 missing values generated)
+
+{com}. 
+. * Net equity issuance (basis points)
+
+. gen net_equity_issuance = (sstky - prstkcy) * 1000 / L.atq
+{txt}(229,047 missing values generated)
+
+{com}. 
+. * Book debt/assets
+
+. gen book_debt_asset = book_debt / atq
+{txt}(139,152 missing values generated)
+
+{com}. 
+. * Calculate covenant control variables
+
+. * Net worth/assets
+
+. gen net_worth = atq - ltq
+{txt}(101,371 missing values generated)
+
+{com}. gen net_worth_assets = net_worth / atq
+{txt}(103,103 missing values generated)
+
+{com}. 
+. * Net working capital/assets
+
+. gen net_working_capital = actq - lctq
+{txt}(200,040 missing values generated)
+
+{com}. gen net_working_capital_asset = net_working_capital / atq
+{txt}(201,800 missing values generated)
+
+{com}. 
+. * Cash/assets
+
+. gen cash_asset = cheq / atq
+{txt}(107,614 missing values generated)
+
+{com}. 
+. * EBITDA/assets
+
+. gen ebitda_asset = oibdpq / L.atq
+{txt}(192,835 missing values generated)
+
+{com}. 
+. * Cash flow/assets
+
+. gen cash_flow = ibadjq + dpq
+{txt}(152,398 missing values generated)
+
+{com}. gen cash_flow_asset = (ibadjq + dpq) / L.atq
+{txt}(198,071 missing values generated)
+
+{com}. 
+. * Net income/assets
+
+. gen net_income_asset = niq / L.atq
+{txt}(131,473 missing values generated)
+
+{com}. 
+. * Interest expense/assets
+
+. gen interest_expense_asset = xintq / L.atq
+{txt}(260,003 missing values generated)
+
+{com}. 
+. * Calculate other control variables
+
+. * Market-to-book ratio
+
+. gen market_value_of_equity = prccq * cshoq
+{txt}(142,526 missing values generated)
+
+{com}. gen book_value_of_equity = atq - ltq - pstklq + txditcq
+{txt}(251,871 missing values generated)
+
+{com}. gen market_to_book = market_value_of_equity / book_value_of_equity
+{txt}(308,959 missing values generated)
+
+{com}. 
+. * Tangible assets/assets 
+
+. gen tangible_asset = ppentq / atq
+{txt}(119,543 missing values generated)
+
+{com}. 
+. * Ln(assets)
+
+. gen ln_asset = ln(atq)
+{txt}(102,254 missing values generated)
+
+{com}. 
+. * Merge data of sufi
+
+. gen year = year(datadate)
+
+. gen month = month(datadate)
+
+. gen day = day(datadate)
+
+. sort gvkey year month day 
+
+. drop _merge
+
+. merge 1:1 gvkey year month day using /Users/yukerui/Desktop/cstatviolations_nss_20090701.dta, force
+{res}{txt}{p 0 7 2}
+(note: variable
+{bf:datadate} was str8 in the using data, but will be
+long now)
+{p_end}
+{p 0 7 2}
+(variable
+{bf:gvkey} was {bf:long}, now {bf:double} to accommodate using data's values)
+{p_end}
+
+{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}         415,964
+{txt}{col 9}from master{col 30}{res}         403,554{txt}  (_merge==1)
+{col 9}from using{col 30}{res}          12,410{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}         250,263{txt}  (_merge==3)
+{col 5}{hline 41}
+
+{com}. drop if _merge == 2
+{txt}(12,410 observations deleted)
+
+{com}. drop _merge
+
+. sort gvkey qdate
+
+. 
+. * Select samples according to the requirements of the paper2
+
+. * Select samples from consecutive time periods. Required indicators: {c -(}saleq atq ppentq dlttq dlcq ltq cheq lctq actq oibdpq dpq niq xintq prccq cshoq pstklq txditcq{c )-}
+
+. gen lag_saleq = L.saleq
+{txt}(92,146 missing values generated)
+
+{com}. gen lag_atq = L.atq
+{txt}(120,516 missing values generated)
+
+{com}. gen lag_ppentq = L.ppentq
+{txt}(136,998 missing values generated)
+
+{com}. gen lag_book_debt = L.book_debt
+{txt}(155,992 missing values generated)
+
+{com}. gen lag_net_worth = L.net_worth
+{txt}(121,257 missing values generated)
+
+{com}. gen lag_cheq = L.cheq
+{txt}(125,544 missing values generated)
+
+{com}. gen lag_net_working_capital = L.net_working_capital
+{txt}(216,512 missing values generated)
+
+{com}. gen lag_oibdpq = L.oibdpq
+{txt}(164,962 missing values generated)
+
+{com}. gen lag_cash_flow = L.cash_flow
+{txt}(170,270 missing values generated)
+
+{com}. gen lag_net_income = L.niq
+{txt}(91,329 missing values generated)
+
+{com}. gen lag_interest_expense = L.xintq
+{txt}(232,614 missing values generated)
+
+{com}. gen lag_market_value_of_equity = L.market_value_of_equity
+{txt}(161,261 missing values generated)
+
+{com}. gen lag_book_value_of_equity = L.book_value_of_equity
+{txt}(253,355 missing values generated)
+
+{com}. gen lag_market_to_book = L.market_to_book
+{txt}(310,185 missing values generated)
+
+{com}. 
+. drop if missing(saleq, atq, ppentq, book_debt, net_worth, cheq, net_working_capital, oibdpq, cash_flow, niq, xintq, market_value_of_equity, book_value_of_equity, lag_market_to_book) | missing(lag_saleq, lag_atq, lag_ppentq, lag_book_debt, lag_net_worth, lag_cheq, lag_net_working_capital, lag_oibdpq, lag_cash_flow, lag_net_income, lag_interest_expense, lag_market_value_of_equity, lag_book_value_of_equity, lag_market_to_book)
+{txt}(456,016 observations deleted)
+
+{com}. 
+. 
+. * Select firms for which there are at least four consecutive quarters of available data
+
+. * Calculate consecutive quarters for each gvkey
+
+. by gvkey: gen consec_quarters = 1 if _n == 1
+{txt}(186,506 missing values generated)
+
+{com}. by gvkey: replace consec_quarters = consec_quarters[_n-1] + 1 if qdate == L.qdate + 1 & _n > 1
+{txt}(130,952 real changes made)
+
+{com}. 
+. * Mark gvkey with at least four consecutive quarters
+
+. by gvkey: egen max_consec = max(consec_quarters)
+
+. gen at_least_4_consec = max_consec >= 4
+
+. keep if at_least_4_consec == 1
+{txt}(30,771 observations deleted)
+
+{com}. 
+. * Establish time span
+
+. keep if fyearq >= 1996 & fyearq <= 2005
+{txt}(23,371 observations deleted)
+
+{com}. 
+. * Winsorize variables
+
+. winsor2 net_debt_issuance, replace cut(5 95)
+
+. winsor2 net_equity_issuance, replace cut(5 95)
+
+. winsor2 book_debt_asset, replace cut(5 95)
+
+. winsor2 net_worth_assets, replace cut(5 95)
+
+. winsor2 net_working_capital_asset, replace cut(5 95)
+
+. winsor2 cash_asset, replace cut(5 95)
+
+. winsor2 ebitda_asset, replace cut(5 95)
+
+. winsor2 cash_flow_asset, replace cut(5 95)
+
+. winsor2 net_income_asset, replace cut(5 95)
+
+. winsor2 interest_expense_asset, replace cut(5 95)
+
+. winsor2 market_to_book, replace cut(5 95)
+
+. winsor2 tangible_asset, replace cut(5 95)
+
+. winsor2 ln_asset, replace cut(5 95)
+
+. 
+. * Summary statistics
+
+. tabstat net_debt_issuance net_equity_issuance book_debt_asset net_worth_assets net_working_capital_asset cash_asset ebitda_asset cash_flow_asset net_income_asset interest_expense_asset market_to_book tangible_asset ln_asset, s(mean p50 sd n) col(stat) f(%7.3f)
+
+{txt}{ralign 12:Variable} {...}
+{c |}      Mean       p50        SD         N
+{hline 13}{c +}{hline 40}
+{ralign 12:net_debt_i~e} {...}
+{c |}{...}
+   {res} 73.797     0.000   478.286   1.4e+05
+{txt}{ralign 12:net_equity~e} {...}
+{c |}{...}
+   {res} 40.288     0.192   114.436   1.3e+05
+{txt}{ralign 12:book_debt_~t} {...}
+{c |}{...}
+   {res}  0.265     0.232     0.236   1.4e+05
+{txt}{ralign 12:net_worth_~s} {...}
+{c |}{...}
+   {res}  0.452     0.478     0.329   1.4e+05
+{txt}{ralign 12:net_workin~t} {...}
+{c |}{...}
+   {res}  0.192     0.173     0.302   1.4e+05
+{txt}{ralign 12:cash_asset} {...}
+{c |}{...}
+   {res}  0.174     0.064     0.226   1.4e+05
+{txt}{ralign 12:ebitda_asset} {...}
+{c |}{...}
+   {res} -0.000     0.024     0.077   1.4e+05
+{txt}{ralign 12:cash_flow_~t} {...}
+{c |}{...}
+   {res} -0.016     0.015     0.089   1.4e+05
+{txt}{ralign 12:net_income~t} {...}
+{c |}{...}
+   {res} -0.030     0.004     0.090   1.4e+05
+{txt}{ralign 12:interest_e~t} {...}
+{c |}{...}
+   {res}  0.006     0.004     0.007   1.4e+05
+{txt}{ralign 12:market_to_~k} {...}
+{c |}{...}
+   {res}  2.422     1.614     3.086   1.4e+05
+{txt}{ralign 12:tangible_a~t} {...}
+{c |}{...}
+   {res}  0.313     0.238     0.257   1.4e+05
+{txt}{ralign 12:ln_asset} {...}
+{c |}{...}
+   {res}  4.622     4.635     2.286   1.4e+05
+{txt}{hline 13}{c BT}{hline 40}
+
+{com}. 
+. sort gvkey fyear fqtr
+
+. drop indfmt consol datafmt curcdq
+
+. save "/Users/yukerui/Desktop/paper2", replace
+{txt}{p 0 4 2}
+(file {bf}
+/Users/yukerui/Desktop/paper2.dta{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/paper2.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Output table3
+
+. * Output panel A
+
+. * Calculate "has S&P rating" indicator
+
+. * I am unable to determine whether "has S&P rating" exists for each quarter. I can only try to define whether each company has "has S&P rating" for each year.
+
+. use "/Users/yukerui/Desktop/s&p.dta", clear
+
+. destring gvkey, replace
+{txt}gvkey: all characters numeric; {res}replaced {txt}as {res}long
+
+{com}. gen year = year(datadate)
+
+. gen spind = 0
+
+. bysort gvkey year: egen temp = max(cond(missing(splticrm) & missing(spsdrm) & missing(spsticrm), 0, 1))
+
+. replace spind = 1 if temp == 1
+{txt}(339,428 real changes made)
+
+{com}. drop temp
+
+. duplicates drop gvkey year spind, force
+
+{p 0 4}{txt}Duplicates in terms of {res} gvkey year spind{p_end}
+
+{txt}(1,327,351 observations deleted)
+
+{com}. sort gvkey year
+
+. expand 4 if _n == 1 | (gvkey != gvkey[_n-1] | year != year[_n-1])
+{txt}(398,145 observations created)
+
+{com}. bysort gvkey year: gen fqtr = _n
+
+. by gvkey year: gen spind1 = spind[1]
+
+. rename year fyear
+{res}
+{com}. sort gvkey fyear fqtr
+
+. save "/Users/yukerui/Desktop/sp", replace
+{txt}{p 0 4 2}
+(file {bf}
+/Users/yukerui/Desktop/sp.dta{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+/Users/yukerui/Desktop/sp.dta{rm}
+saved
+{p_end}
+
+{com}. 
+. * Merge data
+
+. use "/Users/yukerui/Desktop/paper2", clear
+
+. sort gvkey fyear fqtr
+
+. merge 1:1 gvkey fyear fqtr using /Users/yukerui/Desktop/sp.dta
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}         418,909
+{txt}{col 9}from master{col 30}{res}          15,854{txt}  (_merge==1)
+{col 9}from using{col 30}{res}         403,055{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}         127,805{txt}  (_merge==3)
+{col 5}{hline 41}
+
+{com}. drop if _merge == 2
+{txt}(403,055 observations deleted)
+
+{com}. drop _merge
+
+. 
+. * Run regression
+
+. * Indentify calendar year and quarter 
+
+. gen cyear = substr(datacqtr, 1, 4)
+
+. destring cyear, replace
+{txt}cyear: all characters numeric; {res}replaced {txt}as {res}int
+
+{com}. gen cqtr = substr(datacqtr, length(datacqtr), 1)
+
+. destring cqtr, replace
+{txt}cqtr: all characters numeric; {res}replaced {txt}as {res}byte
+
+{com}. 
+. * Construct calendar year-quarter indicator 
+
+. egen cal = group(cyear cqtr)
+{res}
+{com}. 
+. * Column 1
+
+. xtset gvkey qdate
+{res}
+{col 1}{txt:Panel variable: }{res:gvkey}{txt: (unbalanced)}
+{p 1 16 2}{txt:Time variable: }{res:qdate}{txt:, }{res:{bind:144}}{txt: to }{res:{bind:183}}{txt:, but with gaps}{p_end}
+{txt}{col 10}Delta: {res}1 unit
+
+{com}. gen lviol = L.viol
+{txt}(36,626 missing values generated)
+
+{com}. xtreg net_debt_issuance viol lviol i.cal i.fqtr, fe vce(cluster gvkey) 
+{res}
+{txt}Fixed-effects (within) regression{col 49}Number of obs{col 67}={col 69}{res}   105,764
+{txt}Group variable: {res}gvkey{txt}{col 49}Number of groups{col 67}={col 69}{res}     6,270
+
+{txt}R-squared:{col 49}Obs per group:
+     Within  = {res}0.0090{col 63}{txt}min{col 67}={col 69}{res}         1
+{txt}     Between = {res}0.0025{col 63}{txt}avg{col 67}={col 69}{res}      16.9
+{txt}     Overall = {res}0.0075{col 63}{txt}max{col 67}={col 69}{res}        39
+
+{txt}{col 49}F({res}44{txt}, {res}6269{txt}){col 67}={col 70}{res}    13.95
+{txt}corr(u_i, Xb) = {res}-0.0439{txt}{col 49}Prob > F{col 67}={col 73}{res}0.0000
+
+{txt}{ralign 78:(Std. err. adjusted for {res:6,270} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}net_debt_i~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 8}viol {c |}{col 14}{res}{space 2} 13.88864{col 26}{space 2} 8.088508{col 37}{space 1}    1.72{col 46}{space 3}0.086{col 54}{space 4} -1.96761{col 67}{space 3} 29.74488
+{txt}{space 7}lviol {c |}{col 14}{res}{space 2}-93.29189{col 26}{space 2} 7.837699{col 37}{space 1}  -11.90{col 46}{space 3}0.000{col 54}{space 4}-108.6565{col 67}{space 3}-77.92731
+{txt}{space 12} {c |}
+{space 9}cal {c |}
+{space 10}6  {c |}{col 14}{res}{space 2}-24.66395{col 26}{space 2} 13.11896{col 37}{space 1}   -1.88{col 46}{space 3}0.060{col 54}{space 4} -50.3816{col 67}{space 3} 1.053712
+{txt}{space 10}7  {c |}{col 14}{res}{space 2}-18.85835{col 26}{space 2} 13.08554{col 37}{space 1}   -1.44{col 46}{space 3}0.150{col 54}{space 4}-44.51049{col 67}{space 3} 6.793788
+{txt}{space 10}8  {c |}{col 14}{res}{space 2}-8.304186{col 26}{space 2} 12.52724{col 37}{space 1}   -0.66{col 46}{space 3}0.507{col 54}{space 4}-32.86186{col 67}{space 3} 16.25349
+{txt}{space 10}9  {c |}{col 14}{res}{space 2} 26.51476{col 26}{space 2} 11.97412{col 37}{space 1}    2.21{col 46}{space 3}0.027{col 54}{space 4} 3.041394{col 67}{space 3} 49.98813
+{txt}{space 9}10  {c |}{col 14}{res}{space 2}-16.94102{col 26}{space 2} 13.30089{col 37}{space 1}   -1.27{col 46}{space 3}0.203{col 54}{space 4}-43.01532{col 67}{space 3} 9.133288
+{txt}{space 9}11  {c |}{col 14}{res}{space 2}-13.01198{col 26}{space 2}    13.52{col 37}{space 1}   -0.96{col 46}{space 3}0.336{col 54}{space 4} -39.5158{col 67}{space 3} 13.49184
+{txt}{space 9}12  {c |}{col 14}{res}{space 2} 16.50915{col 26}{space 2} 13.48651{col 37}{space 1}    1.22{col 46}{space 3}0.221{col 54}{space 4} -9.92904{col 67}{space 3} 42.94733
+{txt}{space 9}13  {c |}{col 14}{res}{space 2} 41.47729{col 26}{space 2} 12.42516{col 37}{space 1}    3.34{col 46}{space 3}0.001{col 54}{space 4} 17.11972{col 67}{space 3} 65.83485
+{txt}{space 9}14  {c |}{col 14}{res}{space 2}-2.286927{col 26}{space 2} 13.23281{col 37}{space 1}   -0.17{col 46}{space 3}0.863{col 54}{space 4}-28.22776{col 67}{space 3}  23.6539
+{txt}{space 9}15  {c |}{col 14}{res}{space 2}-34.11577{col 26}{space 2} 13.53665{col 37}{space 1}   -2.52{col 46}{space 3}0.012{col 54}{space 4}-60.65225{col 67}{space 3}-7.579295
+{txt}{space 9}16  {c |}{col 14}{res}{space 2}-31.56076{col 26}{space 2} 13.70187{col 37}{space 1}   -2.30{col 46}{space 3}0.021{col 54}{space 4}-58.42111{col 67}{space 3}-4.700406
+{txt}{space 9}17  {c |}{col 14}{res}{space 2}-2.144829{col 26}{space 2}  12.7152{col 37}{space 1}   -0.17{col 46}{space 3}0.866{col 54}{space 4}-27.07098{col 67}{space 3} 22.78133
+{txt}{space 9}18  {c |}{col 14}{res}{space 2}-38.31933{col 26}{space 2} 13.80559{col 37}{space 1}   -2.78{col 46}{space 3}0.006{col 54}{space 4}-65.38301{col 67}{space 3}-11.25566
+{txt}{space 9}19  {c |}{col 14}{res}{space 2} -47.9314{col 26}{space 2} 13.63143{col 37}{space 1}   -3.52{col 46}{space 3}0.000{col 54}{space 4}-74.65367{col 67}{space 3}-21.20913
+{txt}{space 9}20  {c |}{col 14}{res}{space 2}-53.59428{col 26}{space 2} 13.19226{col 37}{space 1}   -4.06{col 46}{space 3}0.000{col 54}{space 4}-79.45563{col 67}{space 3}-27.73292
+{txt}{space 9}21  {c |}{col 14}{res}{space 2}-40.33209{col 26}{space 2} 12.42534{col 37}{space 1}   -3.25{col 46}{space 3}0.001{col 54}{space 4}-64.69001{col 67}{space 3}-15.97417
+{txt}{space 9}22  {c |}{col 14}{res}{space 2}-68.93228{col 26}{space 2} 13.13582{col 37}{space 1}   -5.25{col 46}{space 3}0.000{col 54}{space 4}-94.68298{col 67}{space 3}-43.18158
+{txt}{space 9}23  {c |}{col 14}{res}{space 2}-78.83593{col 26}{space 2} 13.33667{col 37}{space 1}   -5.91{col 46}{space 3}0.000{col 54}{space 4}-104.9804{col 67}{space 3} -52.6915
+{txt}{space 9}24  {c |}{col 14}{res}{space 2}-95.92927{col 26}{space 2} 13.64489{col 37}{space 1}   -7.03{col 46}{space 3}0.000{col 54}{space 4}-122.6779{col 67}{space 3}-69.18061
+{txt}{space 9}25  {c |}{col 14}{res}{space 2}-56.84765{col 26}{space 2} 12.65508{col 37}{space 1}   -4.49{col 46}{space 3}0.000{col 54}{space 4}-81.65594{col 67}{space 3}-32.03937
+{txt}{space 9}26  {c |}{col 14}{res}{space 2}-99.37626{col 26}{space 2} 13.69124{col 37}{space 1}   -7.26{col 46}{space 3}0.000{col 54}{space 4}-126.2158{col 67}{space 3}-72.53674
+{txt}{space 9}27  {c |}{col 14}{res}{space 2}-116.8443{col 26}{space 2} 13.72985{col 37}{space 1}   -8.51{col 46}{space 3}0.000{col 54}{space 4}-143.7595{col 67}{space 3}-89.92905
+{txt}{space 9}28  {c |}{col 14}{res}{space 2}-106.1433{col 26}{space 2} 13.56665{col 37}{space 1}   -7.82{col 46}{space 3}0.000{col 54}{space 4}-132.7386{col 67}{space 3}-79.54802
+{txt}{space 9}29  {c |}{col 14}{res}{space 2}-76.68458{col 26}{space 2} 12.43648{col 37}{space 1}   -6.17{col 46}{space 3}0.000{col 54}{space 4}-101.0643{col 67}{space 3}-52.30482
+{txt}{space 9}30  {c |}{col 14}{res}{space 2}-86.21016{col 26}{space 2} 13.24192{col 37}{space 1}   -6.51{col 46}{space 3}0.000{col 54}{space 4}-112.1689{col 67}{space 3}-60.25147
+{txt}{space 9}31  {c |}{col 14}{res}{space 2}-96.60117{col 26}{space 2} 13.62986{col 37}{space 1}   -7.09{col 46}{space 3}0.000{col 54}{space 4}-123.3204{col 67}{space 3}-69.88197
+{txt}{space 9}32  {c |}{col 14}{res}{space 2}-85.44561{col 26}{space 2} 13.66333{col 37}{space 1}   -6.25{col 46}{space 3}0.000{col 54}{space 4}-112.2304{col 67}{space 3}-58.66081
+{txt}{space 9}33  {c |}{col 14}{res}{space 2}-73.76671{col 26}{space 2} 13.10322{col 37}{space 1}   -5.63{col 46}{space 3}0.000{col 54}{space 4}-99.45351{col 67}{space 3}-48.07991
+{txt}{space 9}34  {c |}{col 14}{res}{space 2}-83.32398{col 26}{space 2} 13.84366{col 37}{space 1}   -6.02{col 46}{space 3}0.000{col 54}{space 4}-110.4623{col 67}{space 3}-56.18567
+{txt}{space 9}35  {c |}{col 14}{res}{space 2}-113.8496{col 26}{space 2} 13.84386{col 37}{space 1}   -8.22{col 46}{space 3}0.000{col 54}{space 4}-140.9883{col 67}{space 3}-86.71086
+{txt}{space 9}36  {c |}{col 14}{res}{space 2}-75.02152{col 26}{space 2} 13.58176{col 37}{space 1}   -5.52{col 46}{space 3}0.000{col 54}{space 4}-101.6464{col 67}{space 3}-48.39662
+{txt}{space 9}37  {c |}{col 14}{res}{space 2}-61.45243{col 26}{space 2} 12.60624{col 37}{space 1}   -4.87{col 46}{space 3}0.000{col 54}{space 4}-86.16497{col 67}{space 3}-36.73988
+{txt}{space 9}38  {c |}{col 14}{res}{space 2}-75.89284{col 26}{space 2} 13.70824{col 37}{space 1}   -5.54{col 46}{space 3}0.000{col 54}{space 4}-102.7657{col 67}{space 3}-49.01999
+{txt}{space 9}39  {c |}{col 14}{res}{space 2}-90.35864{col 26}{space 2} 14.01888{col 37}{space 1}   -6.45{col 46}{space 3}0.000{col 54}{space 4}-117.8404{col 67}{space 3}-62.87684
+{txt}{space 9}40  {c |}{col 14}{res}{space 2}-63.81721{col 26}{space 2}  13.7011{col 37}{space 1}   -4.66{col 46}{space 3}0.000{col 54}{space 4}-90.67606{col 67}{space 3}-36.95836
+{txt}{space 9}41  {c |}{col 14}{res}{space 2}-57.48623{col 26}{space 2} 13.26352{col 37}{space 1}   -4.33{col 46}{space 3}0.000{col 54}{space 4}-83.48727{col 67}{space 3}-31.48518
+{txt}{space 9}42  {c |}{col 14}{res}{space 2}-48.69457{col 26}{space 2} 14.69728{col 37}{space 1}   -3.31{col 46}{space 3}0.001{col 54}{space 4}-77.50626{col 67}{space 3}-19.88287
+{txt}{space 9}43  {c |}{col 14}{res}{space 2}-77.52041{col 26}{space 2} 28.29392{col 37}{space 1}   -2.74{col 46}{space 3}0.006{col 54}{space 4}-132.9862{col 67}{space 3}-22.05463
+{txt}{space 9}44  {c |}{col 14}{res}{space 2}-109.5461{col 26}{space 2} 39.89444{col 37}{space 1}   -2.75{col 46}{space 3}0.006{col 54}{space 4}-187.7528{col 67}{space 3}-31.33933
+{txt}{space 12} {c |}
+{space 8}fqtr {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-31.74993{col 26}{space 2}  6.30272{col 37}{space 1}   -5.04{col 46}{space 3}0.000{col 54}{space 4}-44.10542{col 67}{space 3}-19.39444
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}-52.44651{col 26}{space 2} 6.259534{col 37}{space 1}   -8.38{col 46}{space 3}0.000{col 54}{space 4}-64.71734{col 67}{space 3}-40.17568
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-60.94976{col 26}{space 2}  6.50556{col 37}{space 1}   -9.37{col 46}{space 3}0.000{col 54}{space 4}-73.70288{col 67}{space 3}-48.19663
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} 166.0377{col 26}{space 2} 10.52533{col 37}{space 1}   15.78{col 46}{space 3}0.000{col 54}{space 4} 145.4044{col 67}{space 3} 186.6709
+{txt}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+     sigma_u {c |} {res} 224.31335
+     {txt}sigma_e {c |} {res} 461.49764
+         {txt}rho {c |} {res} .19110193{txt}   (fraction of variance due to u_i)
+{hline 13}{c BT}{hline 64}
+
+{com}. outreg2 using "/Users/yukerui/Desktop/panela1.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/panela1.doc"'"':/Users/yukerui/Desktop/panela1.doc}
+{browse `"/Users/yukerui/Desktop/paper 2/paper 2 dofile"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/panela1.txt""':seeout}
+
+{com}. 
+. * Column 2
+
+. * Control variables
+
+. gen lln_asset = L.ln_asset
+{txt}(11,460 missing values generated)
+
+{com}. gen ltangible_asset = L.tangible_asset 
+{txt}(11,459 missing values generated)
+
+{com}. gen lmarket_to_book = L.market_to_book
+{txt}(11,042 missing values generated)
+
+{com}. gen lspind = L.spind
+{txt}(25,811 missing values generated)
+
+{com}. 
+. * 11 covenant control variables
+
+. gen lbook_debt_asset = L.book_debt_asset
+{txt}(11,459 missing values generated)
+
+{com}. gen lnet_worth_assets = L.net_worth_assets
+{txt}(11,459 missing values generated)
+
+{com}. gen lcash_asset = L.cash_asset
+{txt}(11,459 missing values generated)
+
+{com}. gen lebitda_asset= L.ebitda_asset
+{txt}(11,467 missing values generated)
+
+{com}. * Current EBITDA to lagged assets ratio has been generated by ebitda_asset = oibdpq / L.atq
+
+. gen lcash_flow_asset = L.cash_flow_asset
+{txt}(11,467 missing values generated)
+
+{com}. * Current cash flow to lagged assets ratio has been generated by cash_flow_asset = (ibadq + dpq) / L.atq
+
+. gen lnet_income_asset = L.net_income_asset
+{txt}(11,467 missing values generated)
+
+{com}. * Current net income to lagged assets ratio has been generated by net_income_asset = niq / L.atq
+
+. gen linterest_expense_asset = L.interest_expense_asset
+{txt}(11,467 missing values generated)
+
+{com}. * current interest expense to lagged assets ratio has been generated by gen interest_expense_asset = xintq / L.atq
+
+. 
+. xtreg net_debt_issuance viol lviol lln_asset ltangible_asset lmarket_to_book lspind lbook_debt_asset lnet_worth_assets lcash_asset lebitda_asset ebitda_asset lcash_flow_asset cash_flow_asset lnet_income_asset net_income_asset linterest_expense_asset interest_expense_asset i.cal i.fqtr, fe vce(cluster gvkey)
+{res}
+{txt}Fixed-effects (within) regression{col 49}Number of obs{col 67}={col 69}{res}    97,396
+{txt}Group variable: {res}gvkey{txt}{col 49}Number of groups{col 67}={col 69}{res}     5,875
+
+{txt}R-squared:{col 49}Obs per group:
+     Within  = {res}0.1100{col 63}{txt}min{col 67}={col 69}{res}         1
+{txt}     Between = {res}0.0311{col 63}{txt}avg{col 67}={col 69}{res}      16.6
+{txt}     Overall = {res}0.0483{col 63}{txt}max{col 67}={col 69}{res}        39
+
+{txt}{col 49}F({res}59{txt}, {res}5874{txt}){col 67}={col 70}{res}    43.23
+{txt}corr(u_i, Xb) = {res}-0.5964{txt}{col 49}Prob > F{col 67}={col 73}{res}0.0000
+
+{txt}{ralign 78:(Std. err. adjusted for {res:5,875} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}net_debt_i~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 8}viol {c |}{col 14}{res}{space 2} 8.297558{col 26}{space 2} 8.132015{col 37}{space 1}    1.02{col 46}{space 3}0.308{col 54}{space 4}-7.644182{col 67}{space 3}  24.2393
+{txt}{space 7}lviol {c |}{col 14}{res}{space 2}-79.63216{col 26}{space 2} 7.916515{col 37}{space 1}  -10.06{col 46}{space 3}0.000{col 54}{space 4}-95.15144{col 67}{space 3}-64.11287
+{txt}{space 3}lln_asset {c |}{col 14}{res}{space 2}-54.39602{col 26}{space 2} 6.489974{col 37}{space 1}   -8.38{col 46}{space 3}0.000{col 54}{space 4}-67.11876{col 67}{space 3}-41.67329
+{txt}ltangible_~t {c |}{col 14}{res}{space 2} 191.9793{col 26}{space 2}  35.3447{col 37}{space 1}    5.43{col 46}{space 3}0.000{col 54}{space 4} 122.6907{col 67}{space 3} 261.2679
+{txt}lmarket_to~k {c |}{col 14}{res}{space 2} 2.002973{col 26}{space 2} .9485568{col 37}{space 1}    2.11{col 46}{space 3}0.035{col 54}{space 4} .1434528{col 67}{space 3} 3.862494
+{txt}{space 6}lspind {c |}{col 14}{res}{space 2} 47.04073{col 26}{space 2}  14.2782{col 37}{space 1}    3.29{col 46}{space 3}0.001{col 54}{space 4} 19.05021{col 67}{space 3} 75.03126
+{txt}lbook_debt~t {c |}{col 14}{res}{space 2}-1122.253{col 26}{space 2} 41.24743{col 37}{space 1}  -27.21{col 46}{space 3}0.000{col 54}{space 4}-1203.113{col 67}{space 3}-1041.392
+{txt}lnet_worth~s {c |}{col 14}{res}{space 2}-50.74496{col 26}{space 2} 23.60959{col 37}{space 1}   -2.15{col 46}{space 3}0.032{col 54}{space 4}-97.02844{col 67}{space 3}-4.461482
+{txt}{space 1}lcash_asset {c |}{col 14}{res}{space 2}-120.5997{col 26}{space 2} 26.31341{col 37}{space 1}   -4.58{col 46}{space 3}0.000{col 54}{space 4}-172.1837{col 67}{space 3}-69.01574
+{txt}lebitda_as~t {c |}{col 14}{res}{space 2}-441.7541{col 26}{space 2}  90.3346{col 37}{space 1}   -4.89{col 46}{space 3}0.000{col 54}{space 4}-618.8431{col 67}{space 3} -264.665
+{txt}ebitda_asset {c |}{col 14}{res}{space 2}-99.87379{col 26}{space 2} 94.03359{col 37}{space 1}   -1.06{col 46}{space 3}0.288{col 54}{space 4}-284.2142{col 67}{space 3} 84.46664
+{txt}lcash_flow~t {c |}{col 14}{res}{space 2}-194.2875{col 26}{space 2} 111.6655{col 37}{space 1}   -1.74{col 46}{space 3}0.082{col 54}{space 4} -413.193{col 67}{space 3} 24.61806
+{txt}cash_flow_~t {c |}{col 14}{res}{space 2} 352.9862{col 26}{space 2} 126.3442{col 37}{space 1}    2.79{col 46}{space 3}0.005{col 54}{space 4}  105.305{col 67}{space 3} 600.6674
+{txt}lnet_incom~t {c |}{col 14}{res}{space 2} 247.6667{col 26}{space 2} 99.96078{col 37}{space 1}    2.48{col 46}{space 3}0.013{col 54}{space 4} 51.70677{col 67}{space 3} 443.6266
+{txt}net_income~t {c |}{col 14}{res}{space 2}-663.5078{col 26}{space 2} 116.2269{col 37}{space 1}   -5.71{col 46}{space 3}0.000{col 54}{space 4}-891.3553{col 67}{space 3}-435.6603
+{txt}linterest_~t {c |}{col 14}{res}{space 2}-17388.87{col 26}{space 2} 975.9514{col 37}{space 1}  -17.82{col 46}{space 3}0.000{col 54}{space 4} -19302.1{col 67}{space 3}-15475.65
+{txt}interest_e~t {c |}{col 14}{res}{space 2} 41974.33{col 26}{space 2} 1204.719{col 37}{space 1}   34.84{col 46}{space 3}0.000{col 54}{space 4} 39612.64{col 67}{space 3} 44336.02
+{txt}{space 12} {c |}
+{space 9}cal {c |}
+{space 10}6  {c |}{col 14}{res}{space 2}-18.67877{col 26}{space 2} 13.01401{col 37}{space 1}   -1.44{col 46}{space 3}0.151{col 54}{space 4}-44.19101{col 67}{space 3} 6.833476
+{txt}{space 10}7  {c |}{col 14}{res}{space 2}-25.72709{col 26}{space 2} 13.17181{col 37}{space 1}   -1.95{col 46}{space 3}0.051{col 54}{space 4}-51.54868{col 67}{space 3} .0945019
+{txt}{space 10}8  {c |}{col 14}{res}{space 2}-28.15981{col 26}{space 2} 12.33883{col 37}{space 1}   -2.28{col 46}{space 3}0.023{col 54}{space 4}-52.34845{col 67}{space 3}-3.971172
+{txt}{space 10}9  {c |}{col 14}{res}{space 2} 25.05641{col 26}{space 2} 12.00175{col 37}{space 1}    2.09{col 46}{space 3}0.037{col 54}{space 4} 1.528571{col 67}{space 3} 48.58425
+{txt}{space 9}10  {c |}{col 14}{res}{space 2}-18.49194{col 26}{space 2} 13.19934{col 37}{space 1}   -1.40{col 46}{space 3}0.161{col 54}{space 4}-44.36751{col 67}{space 3} 7.383622
+{txt}{space 9}11  {c |}{col 14}{res}{space 2}-6.651354{col 26}{space 2} 13.48594{col 37}{space 1}   -0.49{col 46}{space 3}0.622{col 54}{space 4}-33.08876{col 67}{space 3} 19.78606
+{txt}{space 9}12  {c |}{col 14}{res}{space 2}  13.3313{col 26}{space 2} 13.40784{col 37}{space 1}    0.99{col 46}{space 3}0.320{col 54}{space 4}  -12.953{col 67}{space 3}  39.6156
+{txt}{space 9}13  {c |}{col 14}{res}{space 2} 41.84184{col 26}{space 2} 12.44682{col 37}{space 1}    3.36{col 46}{space 3}0.001{col 54}{space 4}  17.4415{col 67}{space 3} 66.24218
+{txt}{space 9}14  {c |}{col 14}{res}{space 2} 9.213099{col 26}{space 2} 13.16717{col 37}{space 1}    0.70{col 46}{space 3}0.484{col 54}{space 4}-16.59939{col 67}{space 3} 35.02559
+{txt}{space 9}15  {c |}{col 14}{res}{space 2}-11.36967{col 26}{space 2} 13.53703{col 37}{space 1}   -0.84{col 46}{space 3}0.401{col 54}{space 4}-37.90722{col 67}{space 3} 15.16788
+{txt}{space 9}16  {c |}{col 14}{res}{space 2}-11.29163{col 26}{space 2}  13.6324{col 37}{space 1}   -0.83{col 46}{space 3}0.408{col 54}{space 4}-38.01616{col 67}{space 3} 15.43289
+{txt}{space 9}17  {c |}{col 14}{res}{space 2}  22.7825{col 26}{space 2} 12.79667{col 37}{space 1}    1.78{col 46}{space 3}0.075{col 54}{space 4}-2.303679{col 67}{space 3} 47.86869
+{txt}{space 9}18  {c |}{col 14}{res}{space 2}-7.750206{col 26}{space 2} 13.72091{col 37}{space 1}   -0.56{col 46}{space 3}0.572{col 54}{space 4}-34.64823{col 67}{space 3} 19.14782
+{txt}{space 9}19  {c |}{col 14}{res}{space 2} -22.2267{col 26}{space 2} 13.72694{col 37}{space 1}   -1.62{col 46}{space 3}0.105{col 54}{space 4}-49.13655{col 67}{space 3} 4.683162
+{txt}{space 9}20  {c |}{col 14}{res}{space 2}-25.65237{col 26}{space 2} 13.53646{col 37}{space 1}   -1.90{col 46}{space 3}0.058{col 54}{space 4}-52.18881{col 67}{space 3} .8840757
+{txt}{space 9}21  {c |}{col 14}{res}{space 2}-10.85638{col 26}{space 2} 12.90524{col 37}{space 1}   -0.84{col 46}{space 3}0.400{col 54}{space 4} -36.1554{col 67}{space 3} 14.44264
+{txt}{space 9}22  {c |}{col 14}{res}{space 2}-38.35346{col 26}{space 2} 13.43843{col 37}{space 1}   -2.85{col 46}{space 3}0.004{col 54}{space 4}-64.69772{col 67}{space 3}-12.00919
+{txt}{space 9}23  {c |}{col 14}{res}{space 2}-49.87156{col 26}{space 2} 13.71856{col 37}{space 1}   -3.64{col 46}{space 3}0.000{col 54}{space 4}-76.76499{col 67}{space 3}-22.97814
+{txt}{space 9}24  {c |}{col 14}{res}{space 2}-62.38653{col 26}{space 2} 13.72816{col 37}{space 1}   -4.54{col 46}{space 3}0.000{col 54}{space 4}-89.29878{col 67}{space 3}-35.47428
+{txt}{space 9}25  {c |}{col 14}{res}{space 2}-28.88672{col 26}{space 2} 12.93197{col 37}{space 1}   -2.23{col 46}{space 3}0.026{col 54}{space 4}-54.23813{col 67}{space 3}-3.535297
+{txt}{space 9}26  {c |}{col 14}{res}{space 2} -52.5388{col 26}{space 2} 13.84756{col 37}{space 1}   -3.79{col 46}{space 3}0.000{col 54}{space 4}-79.68512{col 67}{space 3}-25.39249
+{txt}{space 9}27  {c |}{col 14}{res}{space 2}-73.59871{col 26}{space 2} 13.86549{col 37}{space 1}   -5.31{col 46}{space 3}0.000{col 54}{space 4}-100.7802{col 67}{space 3}-46.41726
+{txt}{space 9}28  {c |}{col 14}{res}{space 2}-66.04788{col 26}{space 2} 13.55981{col 37}{space 1}   -4.87{col 46}{space 3}0.000{col 54}{space 4} -92.6301{col 67}{space 3}-39.46566
+{txt}{space 9}29  {c |}{col 14}{res}{space 2}-35.04466{col 26}{space 2} 12.71229{col 37}{space 1}   -2.76{col 46}{space 3}0.006{col 54}{space 4}-59.96543{col 67}{space 3}-10.12389
+{txt}{space 9}30  {c |}{col 14}{res}{space 2}  -36.029{col 26}{space 2} 13.59494{col 37}{space 1}   -2.65{col 46}{space 3}0.008{col 54}{space 4}-62.68008{col 67}{space 3}-9.377926
+{txt}{space 9}31  {c |}{col 14}{res}{space 2}-50.88171{col 26}{space 2} 13.69889{col 37}{space 1}   -3.71{col 46}{space 3}0.000{col 54}{space 4}-77.73657{col 67}{space 3}-24.02685
+{txt}{space 9}32  {c |}{col 14}{res}{space 2}-44.67551{col 26}{space 2} 13.90953{col 37}{space 1}   -3.21{col 46}{space 3}0.001{col 54}{space 4}-71.94331{col 67}{space 3}-17.40771
+{txt}{space 9}33  {c |}{col 14}{res}{space 2}-31.19549{col 26}{space 2} 13.36922{col 37}{space 1}   -2.33{col 46}{space 3}0.020{col 54}{space 4}-57.40408{col 67}{space 3}-4.986911
+{txt}{space 9}34  {c |}{col 14}{res}{space 2}-36.99294{col 26}{space 2} 14.25883{col 37}{space 1}   -2.59{col 46}{space 3}0.009{col 54}{space 4}-64.94548{col 67}{space 3}-9.040391
+{txt}{space 9}35  {c |}{col 14}{res}{space 2}-59.14057{col 26}{space 2} 14.12426{col 37}{space 1}   -4.19{col 46}{space 3}0.000{col 54}{space 4}-86.82931{col 67}{space 3}-31.45183
+{txt}{space 9}36  {c |}{col 14}{res}{space 2}-33.25692{col 26}{space 2} 13.95774{col 37}{space 1}   -2.38{col 46}{space 3}0.017{col 54}{space 4}-60.61923{col 67}{space 3}-5.894602
+{txt}{space 9}37  {c |}{col 14}{res}{space 2}-10.94749{col 26}{space 2} 13.32594{col 37}{space 1}   -0.82{col 46}{space 3}0.411{col 54}{space 4}-37.07123{col 67}{space 3} 15.17626
+{txt}{space 9}38  {c |}{col 14}{res}{space 2}-26.57094{col 26}{space 2} 14.22475{col 37}{space 1}   -1.87{col 46}{space 3}0.062{col 54}{space 4}-54.45669{col 67}{space 3} 1.314807
+{txt}{space 9}39  {c |}{col 14}{res}{space 2}-48.11412{col 26}{space 2} 14.61714{col 37}{space 1}   -3.29{col 46}{space 3}0.001{col 54}{space 4}-76.76909{col 67}{space 3}-19.45915
+{txt}{space 9}40  {c |}{col 14}{res}{space 2}-21.30292{col 26}{space 2} 14.25495{col 37}{space 1}   -1.49{col 46}{space 3}0.135{col 54}{space 4}-49.24786{col 67}{space 3} 6.642029
+{txt}{space 9}41  {c |}{col 14}{res}{space 2}-16.74509{col 26}{space 2} 14.12538{col 37}{space 1}   -1.19{col 46}{space 3}0.236{col 54}{space 4}-44.43603{col 67}{space 3} 10.94586
+{txt}{space 9}42  {c |}{col 14}{res}{space 2} 4.249477{col 26}{space 2} 15.48911{col 37}{space 1}    0.27{col 46}{space 3}0.784{col 54}{space 4}-26.11487{col 67}{space 3} 34.61382
+{txt}{space 9}43  {c |}{col 14}{res}{space 2}-18.83962{col 26}{space 2}  29.6314{col 37}{space 1}   -0.64{col 46}{space 3}0.525{col 54}{space 4}-76.92806{col 67}{space 3} 39.24883
+{txt}{space 9}44  {c |}{col 14}{res}{space 2}-37.24071{col 26}{space 2}   48.097{col 37}{space 1}   -0.77{col 46}{space 3}0.439{col 54}{space 4}-131.5285{col 67}{space 3} 57.04711
+{txt}{space 12} {c |}
+{space 8}fqtr {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-29.66471{col 26}{space 2} 6.016024{col 37}{space 1}   -4.93{col 46}{space 3}0.000{col 54}{space 4}-41.45833{col 67}{space 3}-17.87109
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}-50.24301{col 26}{space 2} 6.045389{col 37}{space 1}   -8.31{col 46}{space 3}0.000{col 54}{space 4} -62.0942{col 67}{space 3}-38.39182
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-79.61422{col 26}{space 2} 6.225663{col 37}{space 1}  -12.79{col 46}{space 3}0.000{col 54}{space 4}-91.81881{col 67}{space 3}-67.40963
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} 505.7462{col 26}{space 2} 34.82062{col 37}{space 1}   14.52{col 46}{space 3}0.000{col 54}{space 4}  437.485{col 67}{space 3} 574.0075
+{txt}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+     sigma_u {c |} {res}  282.8682
+     {txt}sigma_e {c |} {res} 431.66742
+         {txt}rho {c |} {res} .30040948{txt}   (fraction of variance due to u_i)
+{hline 13}{c BT}{hline 64}
+
+{com}. outreg2 using "/Users/yukerui/Desktop/panela2.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/panela2.doc"'"':/Users/yukerui/Desktop/panela2.doc}
+{browse `"/Users/yukerui/Desktop/paper 2/paper 2 dofile"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/panela2.txt""':seeout}
+
+{com}. 
+. * Column 3
+
+. * Covenant control interaction variables
+
+. gen interaction1 = lbook_debt_asset * lcash_flow_asset
+{txt}(11,570 missing values generated)
+
+{com}. gen interaction2 = lbook_debt_asset * lebitda_asset
+{txt}(11,570 missing values generated)
+
+{com}. gen interaction3 = lbook_debt_asset * lnet_worth_assets
+{txt}(11,459 missing values generated)
+
+{com}. gen interaction4 = lebitda_asset * linterest_expense_asset
+{txt}(11,467 missing values generated)
+
+{com}. 
+. xtreg net_debt_issuance viol lviol lln_asset ltangible_asset lmarket_to_book lspind lbook_debt_asset lnet_worth_assets lcash_asset lebitda_asset ebitda_asset lcash_flow_asset cash_flow_asset lnet_income_asset net_income_asset linterest_expense_asset interest_expense_asset interaction1 interaction2 interaction3 interaction4 i.cal i.fqtr, fe vce(cluster gvkey)
+{res}
+{txt}Fixed-effects (within) regression{col 49}Number of obs{col 67}={col 69}{res}    97,396
+{txt}Group variable: {res}gvkey{txt}{col 49}Number of groups{col 67}={col 69}{res}     5,875
+
+{txt}R-squared:{col 49}Obs per group:
+     Within  = {res}0.1203{col 63}{txt}min{col 67}={col 69}{res}         1
+{txt}     Between = {res}0.0383{col 63}{txt}avg{col 67}={col 69}{res}      16.6
+{txt}     Overall = {res}0.0567{col 63}{txt}max{col 67}={col 69}{res}        39
+
+{txt}{col 49}F({res}63{txt}, {res}5874{txt}){col 67}={col 70}{res}    51.00
+{txt}corr(u_i, Xb) = {res}-0.5822{txt}{col 49}Prob > F{col 67}={col 73}{res}0.0000
+
+{txt}{ralign 78:(Std. err. adjusted for {res:5,875} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}net_debt_i~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 8}viol {c |}{col 14}{res}{space 2} 12.54709{col 26}{space 2}  8.13709{col 37}{space 1}    1.54{col 46}{space 3}0.123{col 54}{space 4}-3.404601{col 67}{space 3} 28.49878
+{txt}{space 7}lviol {c |}{col 14}{res}{space 2}-75.59004{col 26}{space 2} 7.879519{col 37}{space 1}   -9.59{col 46}{space 3}0.000{col 54}{space 4}-91.03679{col 67}{space 3}-60.14328
+{txt}{space 3}lln_asset {c |}{col 14}{res}{space 2}-35.30939{col 26}{space 2}  6.40449{col 37}{space 1}   -5.51{col 46}{space 3}0.000{col 54}{space 4}-47.86455{col 67}{space 3}-22.75423
+{txt}ltangible_~t {c |}{col 14}{res}{space 2} 195.2587{col 26}{space 2} 33.68437{col 37}{space 1}    5.80{col 46}{space 3}0.000{col 54}{space 4} 129.2249{col 67}{space 3} 261.2924
+{txt}lmarket_to~k {c |}{col 14}{res}{space 2}  6.01556{col 26}{space 2} .9189673{col 37}{space 1}    6.55{col 46}{space 3}0.000{col 54}{space 4} 4.214046{col 67}{space 3} 7.817074
+{txt}{space 6}lspind {c |}{col 14}{res}{space 2} 63.27766{col 26}{space 2} 14.99386{col 37}{space 1}    4.22{col 46}{space 3}0.000{col 54}{space 4} 33.88418{col 67}{space 3} 92.67114
+{txt}lbook_debt~t {c |}{col 14}{res}{space 2}-1185.504{col 26}{space 2} 39.99088{col 37}{space 1}  -29.64{col 46}{space 3}0.000{col 54}{space 4}-1263.901{col 67}{space 3}-1107.107
+{txt}lnet_worth~s {c |}{col 14}{res}{space 2} 29.60878{col 26}{space 2} 23.29273{col 37}{space 1}    1.27{col 46}{space 3}0.204{col 54}{space 4}-16.05354{col 67}{space 3} 75.27109
+{txt}{space 1}lcash_asset {c |}{col 14}{res}{space 2}-146.7645{col 26}{space 2} 25.86706{col 37}{space 1}   -5.67{col 46}{space 3}0.000{col 54}{space 4}-197.4734{col 67}{space 3}-96.05553
+{txt}lebitda_as~t {c |}{col 14}{res}{space 2} 112.8823{col 26}{space 2} 101.7228{col 37}{space 1}    1.11{col 46}{space 3}0.267{col 54}{space 4}-86.53172{col 67}{space 3} 312.2963
+{txt}ebitda_asset {c |}{col 14}{res}{space 2}-148.9252{col 26}{space 2} 94.91287{col 37}{space 1}   -1.57{col 46}{space 3}0.117{col 54}{space 4}-334.9893{col 67}{space 3} 37.13899
+{txt}lcash_flow~t {c |}{col 14}{res}{space 2}-51.38386{col 26}{space 2}  115.648{col 37}{space 1}   -0.44{col 46}{space 3}0.657{col 54}{space 4}-278.0965{col 67}{space 3} 175.3288
+{txt}cash_flow_~t {c |}{col 14}{res}{space 2} 398.1487{col 26}{space 2} 124.5095{col 37}{space 1}    3.20{col 46}{space 3}0.001{col 54}{space 4} 154.0643{col 67}{space 3} 642.2331
+{txt}lnet_incom~t {c |}{col 14}{res}{space 2} 214.2797{col 26}{space 2} 99.56391{col 37}{space 1}    2.15{col 46}{space 3}0.031{col 54}{space 4} 19.09784{col 67}{space 3} 409.4616
+{txt}net_income~t {c |}{col 14}{res}{space 2}-689.5708{col 26}{space 2} 114.5803{col 37}{space 1}   -6.02{col 46}{space 3}0.000{col 54}{space 4}-914.1904{col 67}{space 3}-464.9512
+{txt}linterest_~t {c |}{col 14}{res}{space 2}-18551.12{col 26}{space 2} 1044.822{col 37}{space 1}  -17.76{col 46}{space 3}0.000{col 54}{space 4}-20599.35{col 67}{space 3}-16502.88
+{txt}interest_e~t {c |}{col 14}{res}{space 2} 41688.95{col 26}{space 2} 1174.611{col 37}{space 1}   35.49{col 46}{space 3}0.000{col 54}{space 4} 39386.28{col 67}{space 3} 43991.62
+{txt}interaction1 {c |}{col 14}{res}{space 2} -249.006{col 26}{space 2} 207.9448{col 37}{space 1}   -1.20{col 46}{space 3}0.231{col 54}{space 4}-656.6543{col 67}{space 3} 158.6424
+{txt}interaction2 {c |}{col 14}{res}{space 2}-1565.612{col 26}{space 2} 320.0371{col 37}{space 1}   -4.89{col 46}{space 3}0.000{col 54}{space 4}-2193.002{col 67}{space 3}-938.2211
+{txt}interaction3 {c |}{col 14}{res}{space 2}-447.6824{col 26}{space 2} 50.10905{col 37}{space 1}   -8.93{col 46}{space 3}0.000{col 54}{space 4}-545.9146{col 67}{space 3}-349.4502
+{txt}interaction4 {c |}{col 14}{res}{space 2}-17390.39{col 26}{space 2}  7442.32{col 37}{space 1}   -2.34{col 46}{space 3}0.019{col 54}{space 4}-31980.08{col 67}{space 3}-2800.706
+{txt}{space 12} {c |}
+{space 9}cal {c |}
+{space 10}6  {c |}{col 14}{res}{space 2}-18.97975{col 26}{space 2} 12.88455{col 37}{space 1}   -1.47{col 46}{space 3}0.141{col 54}{space 4}-44.23821{col 67}{space 3}  6.27871
+{txt}{space 10}7  {c |}{col 14}{res}{space 2}-26.21971{col 26}{space 2} 13.12675{col 37}{space 1}   -2.00{col 46}{space 3}0.046{col 54}{space 4}-51.95296{col 67}{space 3}-.4864555
+{txt}{space 10}8  {c |}{col 14}{res}{space 2} -27.5593{col 26}{space 2} 12.27829{col 37}{space 1}   -2.24{col 46}{space 3}0.025{col 54}{space 4}-51.62926{col 67}{space 3}-3.489332
+{txt}{space 10}9  {c |}{col 14}{res}{space 2} 25.91057{col 26}{space 2}  11.9619{col 37}{space 1}    2.17{col 46}{space 3}0.030{col 54}{space 4} 2.460854{col 67}{space 3} 49.36029
+{txt}{space 9}10  {c |}{col 14}{res}{space 2}-19.62758{col 26}{space 2} 13.18209{col 37}{space 1}   -1.49{col 46}{space 3}0.137{col 54}{space 4}-45.46932{col 67}{space 3} 6.214158
+{txt}{space 9}11  {c |}{col 14}{res}{space 2}-6.614953{col 26}{space 2} 13.46322{col 37}{space 1}   -0.49{col 46}{space 3}0.623{col 54}{space 4}-33.00782{col 67}{space 3} 19.77791
+{txt}{space 9}12  {c |}{col 14}{res}{space 2} 11.80683{col 26}{space 2} 13.36411{col 37}{space 1}    0.88{col 46}{space 3}0.377{col 54}{space 4}-14.39174{col 67}{space 3}  38.0054
+{txt}{space 9}13  {c |}{col 14}{res}{space 2} 42.16965{col 26}{space 2} 12.42447{col 37}{space 1}    3.39{col 46}{space 3}0.001{col 54}{space 4} 17.81313{col 67}{space 3} 66.52618
+{txt}{space 9}14  {c |}{col 14}{res}{space 2} 12.33685{col 26}{space 2}  13.1585{col 37}{space 1}    0.94{col 46}{space 3}0.349{col 54}{space 4}-13.45866{col 67}{space 3} 38.13236
+{txt}{space 9}15  {c |}{col 14}{res}{space 2}-10.32134{col 26}{space 2} 13.54804{col 37}{space 1}   -0.76{col 46}{space 3}0.446{col 54}{space 4}-36.88048{col 67}{space 3}  16.2378
+{txt}{space 9}16  {c |}{col 14}{res}{space 2}-7.850959{col 26}{space 2} 13.61604{col 37}{space 1}   -0.58{col 46}{space 3}0.564{col 54}{space 4} -34.5434{col 67}{space 3} 18.84148
+{txt}{space 9}17  {c |}{col 14}{res}{space 2} 24.53047{col 26}{space 2} 12.81823{col 37}{space 1}    1.91{col 46}{space 3}0.056{col 54}{space 4}-.5979777{col 67}{space 3} 49.65892
+{txt}{space 9}18  {c |}{col 14}{res}{space 2}-5.719123{col 26}{space 2} 13.71923{col 37}{space 1}   -0.42{col 46}{space 3}0.677{col 54}{space 4}-32.61385{col 67}{space 3} 21.17561
+{txt}{space 9}19  {c |}{col 14}{res}{space 2}-19.26675{col 26}{space 2} 13.73357{col 37}{space 1}   -1.40{col 46}{space 3}0.161{col 54}{space 4} -46.1896{col 67}{space 3}  7.65611
+{txt}{space 9}20  {c |}{col 14}{res}{space 2}-24.90758{col 26}{space 2} 13.54254{col 37}{space 1}   -1.84{col 46}{space 3}0.066{col 54}{space 4}-51.45594{col 67}{space 3} 1.640772
+{txt}{space 9}21  {c |}{col 14}{res}{space 2}-9.359416{col 26}{space 2} 12.90092{col 37}{space 1}   -0.73{col 46}{space 3}0.468{col 54}{space 4}-34.64997{col 67}{space 3} 15.93114
+{txt}{space 9}22  {c |}{col 14}{res}{space 2}-38.23409{col 26}{space 2} 13.42411{col 37}{space 1}   -2.85{col 46}{space 3}0.004{col 54}{space 4} -64.5503{col 67}{space 3}-11.91789
+{txt}{space 9}23  {c |}{col 14}{res}{space 2}-48.21948{col 26}{space 2} 13.69396{col 37}{space 1}   -3.52{col 46}{space 3}0.000{col 54}{space 4}-75.06469{col 67}{space 3}-21.37428
+{txt}{space 9}24  {c |}{col 14}{res}{space 2}-61.97612{col 26}{space 2} 13.70335{col 37}{space 1}   -4.52{col 46}{space 3}0.000{col 54}{space 4}-88.83973{col 67}{space 3}-35.11251
+{txt}{space 9}25  {c |}{col 14}{res}{space 2}-31.03294{col 26}{space 2} 12.93252{col 37}{space 1}   -2.40{col 46}{space 3}0.016{col 54}{space 4}-56.38544{col 67}{space 3}-5.680435
+{txt}{space 9}26  {c |}{col 14}{res}{space 2}-53.99714{col 26}{space 2} 13.84073{col 37}{space 1}   -3.90{col 46}{space 3}0.000{col 54}{space 4}-81.13005{col 67}{space 3}-26.86422
+{txt}{space 9}27  {c |}{col 14}{res}{space 2}-76.96917{col 26}{space 2} 13.80402{col 37}{space 1}   -5.58{col 46}{space 3}0.000{col 54}{space 4}-104.0301{col 67}{space 3}-49.90821
+{txt}{space 9}28  {c |}{col 14}{res}{space 2}    -71.8{col 26}{space 2} 13.53441{col 37}{space 1}   -5.30{col 46}{space 3}0.000{col 54}{space 4}-98.33242{col 67}{space 3}-45.26758
+{txt}{space 9}29  {c |}{col 14}{res}{space 2}-40.92092{col 26}{space 2} 12.68786{col 37}{space 1}   -3.23{col 46}{space 3}0.001{col 54}{space 4}-65.79381{col 67}{space 3}-16.04804
+{txt}{space 9}30  {c |}{col 14}{res}{space 2}-41.99299{col 26}{space 2} 13.61606{col 37}{space 1}   -3.08{col 46}{space 3}0.002{col 54}{space 4}-68.68547{col 67}{space 3}-15.30051
+{txt}{space 9}31  {c |}{col 14}{res}{space 2}-57.76242{col 26}{space 2}  13.6347{col 37}{space 1}   -4.24{col 46}{space 3}0.000{col 54}{space 4}-84.49145{col 67}{space 3} -31.0334
+{txt}{space 9}32  {c |}{col 14}{res}{space 2}-53.77349{col 26}{space 2} 13.85307{col 37}{space 1}   -3.88{col 46}{space 3}0.000{col 54}{space 4}-80.93061{col 67}{space 3}-26.61638
+{txt}{space 9}33  {c |}{col 14}{res}{space 2}-42.59297{col 26}{space 2} 13.36301{col 37}{space 1}   -3.19{col 46}{space 3}0.001{col 54}{space 4}-68.78939{col 67}{space 3}-16.39655
+{txt}{space 9}34  {c |}{col 14}{res}{space 2}-50.96453{col 26}{space 2} 14.23005{col 37}{space 1}   -3.58{col 46}{space 3}0.000{col 54}{space 4}-78.86066{col 67}{space 3} -23.0684
+{txt}{space 9}35  {c |}{col 14}{res}{space 2}-74.43145{col 26}{space 2} 14.14765{col 37}{space 1}   -5.26{col 46}{space 3}0.000{col 54}{space 4} -102.166{col 67}{space 3}-46.69685
+{txt}{space 9}36  {c |}{col 14}{res}{space 2}-51.12838{col 26}{space 2} 13.92634{col 37}{space 1}   -3.67{col 46}{space 3}0.000{col 54}{space 4}-78.42914{col 67}{space 3}-23.82763
+{txt}{space 9}37  {c |}{col 14}{res}{space 2}-31.50559{col 26}{space 2}   13.297{col 37}{space 1}   -2.37{col 46}{space 3}0.018{col 54}{space 4}-57.57261{col 67}{space 3}-5.438566
+{txt}{space 9}38  {c |}{col 14}{res}{space 2}-48.06612{col 26}{space 2} 14.16793{col 37}{space 1}   -3.39{col 46}{space 3}0.001{col 54}{space 4}-75.84047{col 67}{space 3}-20.29176
+{txt}{space 9}39  {c |}{col 14}{res}{space 2} -69.8882{col 26}{space 2} 14.53024{col 37}{space 1}   -4.81{col 46}{space 3}0.000{col 54}{space 4}-98.37282{col 67}{space 3}-41.40359
+{txt}{space 9}40  {c |}{col 14}{res}{space 2}-44.72333{col 26}{space 2} 14.19352{col 37}{space 1}   -3.15{col 46}{space 3}0.002{col 54}{space 4}-72.54785{col 67}{space 3}-16.89881
+{txt}{space 9}41  {c |}{col 14}{res}{space 2}-39.70678{col 26}{space 2} 14.02098{col 37}{space 1}   -2.83{col 46}{space 3}0.005{col 54}{space 4}-67.19305{col 67}{space 3}-12.22051
+{txt}{space 9}42  {c |}{col 14}{res}{space 2}-19.76147{col 26}{space 2} 15.44202{col 37}{space 1}   -1.28{col 46}{space 3}0.201{col 54}{space 4} -50.0335{col 67}{space 3} 10.51056
+{txt}{space 9}43  {c |}{col 14}{res}{space 2}-45.09371{col 26}{space 2} 29.14585{col 37}{space 1}   -1.55{col 46}{space 3}0.122{col 54}{space 4}-102.2303{col 67}{space 3} 12.04288
+{txt}{space 9}44  {c |}{col 14}{res}{space 2} -63.5284{col 26}{space 2} 46.31088{col 37}{space 1}   -1.37{col 46}{space 3}0.170{col 54}{space 4}-154.3148{col 67}{space 3} 27.25797
+{txt}{space 12} {c |}
+{space 8}fqtr {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-27.33983{col 26}{space 2} 5.969929{col 37}{space 1}   -4.58{col 46}{space 3}0.000{col 54}{space 4}-39.04308{col 67}{space 3}-15.63657
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}-48.03497{col 26}{space 2} 6.006614{col 37}{space 1}   -8.00{col 46}{space 3}0.000{col 54}{space 4}-59.81014{col 67}{space 3}-36.25979
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-77.32703{col 26}{space 2} 6.170133{col 37}{space 1}  -12.53{col 46}{space 3}0.000{col 54}{space 4}-89.42276{col 67}{space 3} -65.2313
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} 424.4669{col 26}{space 2} 34.20573{col 37}{space 1}   12.41{col 46}{space 3}0.000{col 54}{space 4} 357.4111{col 67}{space 3} 491.5228
+{txt}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+     sigma_u {c |} {res} 279.21856
+     {txt}sigma_e {c |} {res} 429.15107
+         {txt}rho {c |} {res} .29741701{txt}   (fraction of variance due to u_i)
+{hline 13}{c BT}{hline 64}
+
+{com}. outreg2 using "/Users/yukerui/Desktop/panela3.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/panela3.doc"'"':/Users/yukerui/Desktop/panela3.doc}
+{browse `"/Users/yukerui/Desktop/paper 2/paper 2 dofile"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/panela3.txt""':seeout}
+
+{com}. 
+. * Column 4
+
+. * Generate these variables squared and to the third power
+
+. foreach var in lbook_debt_asset lnet_worth_assets lcash_asset lebitda_asset ebitda_asset lcash_flow_asset cash_flow_asset lnet_income_asset net_income_asset linterest_expense_asset interest_expense_asset interaction1 interaction2 interaction3 interaction4 {c -(}
+{txt}  2{com}.     gen `var'_s2 = `var'^2
+{txt}  3{com}.     gen `var'_c3 = `var'^3
+{txt}  4{com}. egen `var'_ile = xtile(`var'), nq(5)
+{txt}  5{com}. {c )-}
+{txt}(11,459 missing values generated)
+(11,459 missing values generated)
+(11,459 missing values generated)
+(11,459 missing values generated)
+(11,459 missing values generated)
+(11,459 missing values generated)
+(11,459 missing values generated)
+(11,459 missing values generated)
+(11,459 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+(476 missing values generated)
+(476 missing values generated)
+(476 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+(476 missing values generated)
+(476 missing values generated)
+(476 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+(476 missing values generated)
+(476 missing values generated)
+(476 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+(476 missing values generated)
+(476 missing values generated)
+(476 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(11,459 missing values generated)
+(11,459 missing values generated)
+(11,459 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+(11,467 missing values generated)
+
+{com}. 
+. xtreg net_debt_issuance viol lviol lln_asset ltangible_asset lmarket_to_book lspind lbook_debt_asset lnet_worth_assets lcash_asset lebitda_asset ebitda_asset lcash_flow_asset cash_flow_asset lnet_income_asset net_income_asset linterest_expense_asset interest_expense_asset interaction1 interaction2 interaction3 interaction4 *_s2 *_c3 i.*_ile i.cal i.fqtr, fe vce(cluster gvkey)
+{res}
+{txt}Fixed-effects (within) regression{col 49}Number of obs{col 67}={col 69}{res}    97,396
+{txt}Group variable: {res}gvkey{txt}{col 49}Number of groups{col 67}={col 69}{res}     5,875
+
+{txt}R-squared:{col 49}Obs per group:
+     Within  = {res}0.1480{col 63}{txt}min{col 67}={col 69}{res}         1
+{txt}     Between = {res}0.0508{col 63}{txt}avg{col 67}={col 69}{res}      16.6
+{txt}     Overall = {res}0.0808{col 63}{txt}max{col 67}={col 69}{res}        39
+
+{txt}{col 49}F({res}153{txt}, {res}5874{txt}){col 67}={col 70}{res}    29.52
+{txt}corr(u_i, Xb) = {res}-0.5291{txt}{col 49}Prob > F{col 67}={col 73}{res}0.0000
+
+{txt}{ralign 78:(Std. err. adjusted for {res:5,875} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}net_debt_i~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 8}viol {c |}{col 14}{res}{space 2} 9.398645{col 26}{space 2} 8.163655{col 37}{space 1}    1.15{col 46}{space 3}0.250{col 54}{space 4}-6.605123{col 67}{space 3} 25.40241
+{txt}{space 7}lviol {c |}{col 14}{res}{space 2}-75.02262{col 26}{space 2} 7.760001{col 37}{space 1}   -9.67{col 46}{space 3}0.000{col 54}{space 4}-90.23508{col 67}{space 3}-59.81016
+{txt}{space 3}lln_asset {c |}{col 14}{res}{space 2}-37.44635{col 26}{space 2} 6.500235{col 37}{space 1}   -5.76{col 46}{space 3}0.000{col 54}{space 4} -50.1892{col 67}{space 3} -24.7035
+{txt}ltangible_~t {c |}{col 14}{res}{space 2} 177.6114{col 26}{space 2} 33.71429{col 37}{space 1}    5.27{col 46}{space 3}0.000{col 54}{space 4}  111.519{col 67}{space 3} 243.7038
+{txt}lmarket_to~k {c |}{col 14}{res}{space 2} 6.930819{col 26}{space 2} .9885455{col 37}{space 1}    7.01{col 46}{space 3}0.000{col 54}{space 4} 4.992906{col 67}{space 3} 8.868732
+{txt}{space 6}lspind {c |}{col 14}{res}{space 2} 62.72588{col 26}{space 2} 14.89509{col 37}{space 1}    4.21{col 46}{space 3}0.000{col 54}{space 4} 33.52602{col 67}{space 3} 91.92573
+{txt}lbook_debt~t {c |}{col 14}{res}{space 2}-2121.686{col 26}{space 2} 219.8656{col 37}{space 1}   -9.65{col 46}{space 3}0.000{col 54}{space 4}-2552.703{col 67}{space 3}-1690.668
+{txt}lnet_worth~s {c |}{col 14}{res}{space 2} 190.3858{col 26}{space 2} 51.55377{col 37}{space 1}    3.69{col 46}{space 3}0.000{col 54}{space 4} 89.32144{col 67}{space 3} 291.4501
+{txt}{space 1}lcash_asset {c |}{col 14}{res}{space 2}-171.4592{col 26}{space 2} 162.5984{col 37}{space 1}   -1.05{col 46}{space 3}0.292{col 54}{space 4}-490.2118{col 67}{space 3} 147.2935
+{txt}lebitda_as~t {c |}{col 14}{res}{space 2} 405.7843{col 26}{space 2} 195.7815{col 37}{space 1}    2.07{col 46}{space 3}0.038{col 54}{space 4} 21.98061{col 67}{space 3}  789.588
+{txt}ebitda_asset {c |}{col 14}{res}{space 2}  75.1537{col 26}{space 2} 190.4642{col 37}{space 1}    0.39{col 46}{space 3}0.693{col 54}{space 4}-298.2263{col 67}{space 3} 448.5337
+{txt}lcash_flow~t {c |}{col 14}{res}{space 2}-277.7489{col 26}{space 2} 251.3511{col 37}{space 1}   -1.11{col 46}{space 3}0.269{col 54}{space 4}-770.4895{col 67}{space 3} 214.9916
+{txt}cash_flow_~t {c |}{col 14}{res}{space 2} 452.0552{col 26}{space 2} 262.6187{col 37}{space 1}    1.72{col 46}{space 3}0.085{col 54}{space 4}-62.77399{col 67}{space 3} 966.8845
+{txt}lnet_incom~t {c |}{col 14}{res}{space 2} 126.4024{col 26}{space 2} 260.3414{col 37}{space 1}    0.49{col 46}{space 3}0.627{col 54}{space 4}-383.9625{col 67}{space 3} 636.7673
+{txt}net_income~t {c |}{col 14}{res}{space 2}-1974.048{col 26}{space 2} 279.6673{col 37}{space 1}   -7.06{col 46}{space 3}0.000{col 54}{space 4}-2522.299{col 67}{space 3}-1425.798
+{txt}linterest_~t {c |}{col 14}{res}{space 2}-72855.26{col 26}{space 2} 6290.952{col 37}{space 1}  -11.58{col 46}{space 3}0.000{col 54}{space 4}-85187.84{col 67}{space 3}-60522.68
+{txt}interest_e~t {c |}{col 14}{res}{space 2} 143393.4{col 26}{space 2} 7166.877{col 37}{space 1}   20.01{col 46}{space 3}0.000{col 54}{space 4} 129343.7{col 67}{space 3} 157443.2
+{txt}interaction1 {c |}{col 14}{res}{space 2} 669.9711{col 26}{space 2} 434.1026{col 37}{space 1}    1.54{col 46}{space 3}0.123{col 54}{space 4}-181.0297{col 67}{space 3} 1520.972
+{txt}interaction2 {c |}{col 14}{res}{space 2} -1805.19{col 26}{space 2} 576.3516{col 37}{space 1}   -3.13{col 46}{space 3}0.002{col 54}{space 4}-2935.052{col 67}{space 3}-675.3292
+{txt}interaction3 {c |}{col 14}{res}{space 2}-1005.964{col 26}{space 2} 165.0514{col 37}{space 1}   -6.09{col 46}{space 3}0.000{col 54}{space 4}-1329.525{col 67}{space 3}-682.4023
+{txt}interaction4 {c |}{col 14}{res}{space 2}-25310.75{col 26}{space 2} 14512.36{col 37}{space 1}   -1.74{col 46}{space 3}0.081{col 54}{space 4}-53760.32{col 67}{space 3} 3138.819
+{txt}lbook_debt~2 {c |}{col 14}{res}{space 2} 1656.784{col 26}{space 2}  553.634{col 37}{space 1}    2.99{col 46}{space 3}0.003{col 54}{space 4} 571.4574{col 67}{space 3}  2742.11
+{txt}lnet_worth~2 {c |}{col 14}{res}{space 2} 165.1071{col 26}{space 2} 125.8649{col 37}{space 1}    1.31{col 46}{space 3}0.190{col 54}{space 4}-81.63435{col 67}{space 3} 411.8485
+{txt}lcash_asse~2 {c |}{col 14}{res}{space 2} 256.3454{col 26}{space 2}  462.634{col 37}{space 1}    0.55{col 46}{space 3}0.580{col 54}{space 4}-650.5874{col 67}{space 3} 1163.278
+{txt}lebitda_as~2 {c |}{col 14}{res}{space 2} 230.0725{col 26}{space 2} 1706.118{col 37}{space 1}    0.13{col 46}{space 3}0.893{col 54}{space 4}-3114.547{col 67}{space 3} 3574.692
+{txt}ebitda_ass~2 {c |}{col 14}{res}{space 2} 4880.886{col 26}{space 2} 1724.515{col 37}{space 1}    2.83{col 46}{space 3}0.005{col 54}{space 4} 1500.202{col 67}{space 3}  8261.57
+{txt}lcash_flow~2 {c |}{col 14}{res}{space 2}-3790.414{col 26}{space 2} 2344.721{col 37}{space 1}   -1.62{col 46}{space 3}0.106{col 54}{space 4}-8386.929{col 67}{space 3} 806.1013
+{txt}cash_flow_~2 {c |}{col 14}{res}{space 2}-1369.981{col 26}{space 2} 2514.509{col 37}{space 1}   -0.54{col 46}{space 3}0.586{col 54}{space 4}-6299.344{col 67}{space 3} 3559.383
+{txt}lnet_incom~2 {c |}{col 14}{res}{space 2} 757.7281{col 26}{space 2} 2295.314{col 37}{space 1}    0.33{col 46}{space 3}0.741{col 54}{space 4}-3741.931{col 67}{space 3} 5257.387
+{txt}net_income~2 {c |}{col 14}{res}{space 2}-12565.55{col 26}{space 2} 2568.874{col 37}{space 1}   -4.89{col 46}{space 3}0.000{col 54}{space 4}-17601.49{col 67}{space 3}-7529.615
+{txt}linterest_~2 {c |}{col 14}{res}{space 2}  3141582{col 26}{space 2} 549368.6{col 37}{space 1}    5.72{col 46}{space 3}0.000{col 54}{space 4}  2064618{col 67}{space 3}  4218547
+{txt}interest_e~2 {c |}{col 14}{res}{space 2} -6188623{col 26}{space 2} 639646.2{col 37}{space 1}   -9.68{col 46}{space 3}0.000{col 54}{space 4} -7442565{col 67}{space 3} -4934681
+{txt}interac~1_s2 {c |}{col 14}{res}{space 2} 4396.647{col 26}{space 2} 5748.487{col 37}{space 1}    0.76{col 46}{space 3}0.444{col 54}{space 4}-6872.503{col 67}{space 3}  15665.8
+{txt}interac~2_s2 {c |}{col 14}{res}{space 2}-1016.598{col 26}{space 2} 8483.852{col 37}{space 1}   -0.12{col 46}{space 3}0.905{col 54}{space 4}-17648.07{col 67}{space 3} 15614.87
+{txt}interac~3_s2 {c |}{col 14}{res}{space 2} 1465.376{col 26}{space 2} 513.9733{col 37}{space 1}    2.85{col 46}{space 3}0.004{col 54}{space 4} 457.7991{col 67}{space 3} 2472.953
+{txt}interac~4_s2 {c |}{col 14}{res}{space 2}  7457542{col 26}{space 2}  7396996{col 37}{space 1}    1.01{col 46}{space 3}0.313{col 54}{space 4} -7043291{col 67}{space 3} 2.20e+07
+{txt}lbook_debt~3 {c |}{col 14}{res}{space 2}-758.5446{col 26}{space 2} 431.6509{col 37}{space 1}   -1.76{col 46}{space 3}0.079{col 54}{space 4}-1604.739{col 67}{space 3} 87.64992
+{txt}lnet_worth~3 {c |}{col 14}{res}{space 2}-412.5386{col 26}{space 2}  121.911{col 37}{space 1}   -3.38{col 46}{space 3}0.001{col 54}{space 4} -651.529{col 67}{space 3}-173.5482
+{txt}lcash_asse~3 {c |}{col 14}{res}{space 2}-66.74007{col 26}{space 2} 383.4987{col 37}{space 1}   -0.17{col 46}{space 3}0.862{col 54}{space 4}-818.5386{col 67}{space 3} 685.0585
+{txt}lebitda_as~3 {c |}{col 14}{res}{space 2}-2703.447{col 26}{space 2} 6759.162{col 37}{space 1}   -0.40{col 46}{space 3}0.689{col 54}{space 4}-15953.89{col 67}{space 3}    10547
+{txt}ebitda_ass~3 {c |}{col 14}{res}{space 2} 12403.03{col 26}{space 2} 6649.948{col 37}{space 1}    1.87{col 46}{space 3}0.062{col 54}{space 4}-633.3136{col 67}{space 3} 25439.38
+{txt}lcash_flow~3 {c |}{col 14}{res}{space 2} -9416.17{col 26}{space 2}     6607{col 37}{space 1}   -1.43{col 46}{space 3}0.154{col 54}{space 4}-22368.32{col 67}{space 3} 3535.981
+{txt}cash_flow_~3 {c |}{col 14}{res}{space 2}-6421.197{col 26}{space 2} 7210.396{col 37}{space 1}   -0.89{col 46}{space 3}0.373{col 54}{space 4}-20556.23{col 67}{space 3} 7713.832
+{txt}lnet_incom~3 {c |}{col 14}{res}{space 2}   2454.9{col 26}{space 2} 5810.003{col 37}{space 1}    0.42{col 46}{space 3}0.673{col 54}{space 4}-8934.844{col 67}{space 3} 13844.64
+{txt}net_income~3 {c |}{col 14}{res}{space 2}-24735.49{col 26}{space 2}  6585.67{col 37}{space 1}   -3.76{col 46}{space 3}0.000{col 54}{space 4}-37645.83{col 67}{space 3}-11825.16
+{txt}linterest_~3 {c |}{col 14}{res}{space 2}-4.53e+07{col 26}{space 2} 1.39e+07{col 37}{space 1}   -3.26{col 46}{space 3}0.001{col 54}{space 4}-7.26e+07{col 67}{space 3}-1.80e+07
+{txt}interest_e~3 {c |}{col 14}{res}{space 2} 9.55e+07{col 26}{space 2} 1.62e+07{col 37}{space 1}    5.91{col 46}{space 3}0.000{col 54}{space 4} 6.39e+07{col 67}{space 3} 1.27e+08
+{txt}interac~1_c3 {c |}{col 14}{res}{space 2}-2767.441{col 26}{space 2} 19518.02{col 37}{space 1}   -0.14{col 46}{space 3}0.887{col 54}{space 4}-41029.95{col 67}{space 3} 35495.06
+{txt}interac~2_c3 {c |}{col 14}{res}{space 2} 8311.467{col 26}{space 2} 38976.46{col 37}{space 1}    0.21{col 46}{space 3}0.831{col 54}{space 4}-68096.73{col 67}{space 3} 84719.67
+{txt}interac~3_c3 {c |}{col 14}{res}{space 2} 6950.942{col 26}{space 2} 1761.293{col 37}{space 1}    3.95{col 46}{space 3}0.000{col 54}{space 4}  3498.16{col 67}{space 3} 10403.72
+{txt}interac~4_c3 {c |}{col 14}{res}{space 2} 1.27e+09{col 26}{space 2} 1.05e+09{col 37}{space 1}    1.21{col 46}{space 3}0.227{col 54}{space 4}-7.90e+08{col 67}{space 3} 3.33e+09
+{txt}{space 12} {c |}
+lbook_debt~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2} 8.296817{col 26}{space 2} 12.78053{col 37}{space 1}    0.65{col 46}{space 3}0.516{col 54}{space 4}-16.75772{col 67}{space 3} 33.35135
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} 23.96664{col 26}{space 2} 17.22456{col 37}{space 1}    1.39{col 46}{space 3}0.164{col 54}{space 4}-9.799829{col 67}{space 3} 57.73311
+{txt}{space 10}4  {c |}{col 14}{res}{space 2} 6.538546{col 26}{space 2} 20.36984{col 37}{space 1}    0.32{col 46}{space 3}0.748{col 54}{space 4}-33.39384{col 67}{space 3} 46.47093
+{txt}{space 10}5  {c |}{col 14}{res}{space 2} 4.852668{col 26}{space 2} 24.49389{col 37}{space 1}    0.20{col 46}{space 3}0.843{col 54}{space 4}-43.16438{col 67}{space 3} 52.86971
+{txt}{space 12} {c |}
+lnet_worth~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2} 2.365163{col 26}{space 2} 10.51001{col 37}{space 1}    0.23{col 46}{space 3}0.822{col 54}{space 4}-18.23832{col 67}{space 3} 22.96864
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} 3.908856{col 26}{space 2} 15.10645{col 37}{space 1}    0.26{col 46}{space 3}0.796{col 54}{space 4}-25.70534{col 67}{space 3} 33.52305
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-2.197799{col 26}{space 2} 19.05012{col 37}{space 1}   -0.12{col 46}{space 3}0.908{col 54}{space 4}-39.54305{col 67}{space 3} 35.14745
+{txt}{space 10}5  {c |}{col 14}{res}{space 2}-.4483491{col 26}{space 2} 21.49459{col 37}{space 1}   -0.02{col 46}{space 3}0.983{col 54}{space 4}-42.58565{col 67}{space 3} 41.68895
+{txt}{space 12} {c |}
+lcash_asse~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-19.09797{col 26}{space 2} 6.693472{col 37}{space 1}   -2.85{col 46}{space 3}0.004{col 54}{space 4}-32.21964{col 67}{space 3}  -5.9763
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}-39.73695{col 26}{space 2} 10.03481{col 37}{space 1}   -3.96{col 46}{space 3}0.000{col 54}{space 4}-59.40887{col 67}{space 3}-20.06503
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-60.08735{col 26}{space 2} 16.36563{col 37}{space 1}   -3.67{col 46}{space 3}0.000{col 54}{space 4}-92.17001{col 67}{space 3} -28.0047
+{txt}{space 10}5  {c |}{col 14}{res}{space 2}-70.57393{col 26}{space 2}  20.1139{col 37}{space 1}   -3.51{col 46}{space 3}0.000{col 54}{space 4}-110.0046{col 67}{space 3}-31.14327
+{txt}{space 12} {c |}
+lebitda_as~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-1.902346{col 26}{space 2} 11.33546{col 37}{space 1}   -0.17{col 46}{space 3}0.867{col 54}{space 4}-24.12401{col 67}{space 3} 20.31932
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}-8.832417{col 26}{space 2} 14.15053{col 37}{space 1}   -0.62{col 46}{space 3}0.533{col 54}{space 4}-36.57266{col 67}{space 3} 18.90783
+{txt}{space 10}4  {c |}{col 14}{res}{space 2} .1586382{col 26}{space 2} 16.51344{col 37}{space 1}    0.01{col 46}{space 3}0.992{col 54}{space 4}-32.21378{col 67}{space 3} 32.53105
+{txt}{space 10}5  {c |}{col 14}{res}{space 2} -3.11857{col 26}{space 2} 19.82425{col 37}{space 1}   -0.16{col 46}{space 3}0.875{col 54}{space 4} -41.9814{col 67}{space 3} 35.74426
+{txt}{space 12} {c |}
+ebitda_ass~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2} 18.45779{col 26}{space 2} 11.88534{col 37}{space 1}    1.55{col 46}{space 3}0.120{col 54}{space 4}-4.841852{col 67}{space 3} 41.75742
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} 14.74521{col 26}{space 2} 14.75941{col 37}{space 1}    1.00{col 46}{space 3}0.318{col 54}{space 4}-14.18867{col 67}{space 3} 43.67909
+{txt}{space 10}4  {c |}{col 14}{res}{space 2} 40.60137{col 26}{space 2} 16.95714{col 37}{space 1}    2.39{col 46}{space 3}0.017{col 54}{space 4} 7.359141{col 67}{space 3}  73.8436
+{txt}{space 10}5  {c |}{col 14}{res}{space 2}  66.2348{col 26}{space 2} 20.49212{col 37}{space 1}    3.23{col 46}{space 3}0.001{col 54}{space 4}  26.0627{col 67}{space 3} 106.4069
+{txt}{space 12} {c |}
+lcash_flow~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-20.56201{col 26}{space 2} 13.47415{col 37}{space 1}   -1.53{col 46}{space 3}0.127{col 54}{space 4} -46.9763{col 67}{space 3}  5.85227
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} -15.0091{col 26}{space 2} 15.79301{col 37}{space 1}   -0.95{col 46}{space 3}0.342{col 54}{space 4}-45.96921{col 67}{space 3}   15.951
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-6.928306{col 26}{space 2} 17.71964{col 37}{space 1}   -0.39{col 46}{space 3}0.696{col 54}{space 4}-41.66531{col 67}{space 3}  27.8087
+{txt}{space 10}5  {c |}{col 14}{res}{space 2}-7.482378{col 26}{space 2} 20.71827{col 37}{space 1}   -0.36{col 46}{space 3}0.718{col 54}{space 4}-48.09782{col 67}{space 3} 33.13306
+{txt}{space 12} {c |}
+cash_flow_~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-6.811179{col 26}{space 2} 14.39229{col 37}{space 1}   -0.47{col 46}{space 3}0.636{col 54}{space 4}-35.02536{col 67}{space 3}   21.403
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} 10.36016{col 26}{space 2} 16.90652{col 37}{space 1}    0.61{col 46}{space 3}0.540{col 54}{space 4}-22.78283{col 67}{space 3} 43.50315
+{txt}{space 10}4  {c |}{col 14}{res}{space 2} .2844283{col 26}{space 2} 18.70484{col 37}{space 1}    0.02{col 46}{space 3}0.988{col 54}{space 4}-36.38393{col 67}{space 3} 36.95279
+{txt}{space 10}5  {c |}{col 14}{res}{space 2} -13.9537{col 26}{space 2} 21.30273{col 37}{space 1}   -0.66{col 46}{space 3}0.512{col 54}{space 4}-55.71489{col 67}{space 3} 27.80748
+{txt}{space 12} {c |}
+lnet_incom~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2} 17.94874{col 26}{space 2} 13.01645{col 37}{space 1}    1.38{col 46}{space 3}0.168{col 54}{space 4}-7.568281{col 67}{space 3} 43.46576
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}  18.5424{col 26}{space 2} 15.49982{col 37}{space 1}    1.20{col 46}{space 3}0.232{col 54}{space 4}-11.84296{col 67}{space 3} 48.92776
+{txt}{space 10}4  {c |}{col 14}{res}{space 2} 35.92996{col 26}{space 2} 17.15619{col 37}{space 1}    2.09{col 46}{space 3}0.036{col 54}{space 4} 2.297522{col 67}{space 3} 69.56239
+{txt}{space 10}5  {c |}{col 14}{res}{space 2} 35.49594{col 26}{space 2} 19.80842{col 37}{space 1}    1.79{col 46}{space 3}0.073{col 54}{space 4}-3.335854{col 67}{space 3} 74.32774
+{txt}{space 12} {c |}
+net_income~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2} 23.95199{col 26}{space 2} 14.11319{col 37}{space 1}    1.70{col 46}{space 3}0.090{col 54}{space 4}-3.715052{col 67}{space 3} 51.61903
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}  21.3283{col 26}{space 2}  16.7184{col 37}{space 1}    1.28{col 46}{space 3}0.202{col 54}{space 4}-11.44592{col 67}{space 3} 54.10252
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-.8924951{col 26}{space 2} 18.46734{col 37}{space 1}   -0.05{col 46}{space 3}0.961{col 54}{space 4}-37.09529{col 67}{space 3}  35.3103
+{txt}{space 10}5  {c |}{col 14}{res}{space 2}-30.91488{col 26}{space 2} 21.06086{col 37}{space 1}   -1.47{col 46}{space 3}0.142{col 54}{space 4} -72.2019{col 67}{space 3} 10.37215
+{txt}{space 12} {c |}
+linterest_~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2} 20.89663{col 26}{space 2} 10.77824{col 37}{space 1}    1.94{col 46}{space 3}0.053{col 54}{space 4}-.2326821{col 67}{space 3} 42.02595
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} 32.89034{col 26}{space 2} 15.42797{col 37}{space 1}    2.13{col 46}{space 3}0.033{col 54}{space 4}  2.64584{col 67}{space 3} 63.13484
+{txt}{space 10}4  {c |}{col 14}{res}{space 2} 7.637905{col 26}{space 2} 19.07378{col 37}{space 1}    0.40{col 46}{space 3}0.689{col 54}{space 4}-29.75373{col 67}{space 3} 45.02954
+{txt}{space 10}5  {c |}{col 14}{res}{space 2} 2.073826{col 26}{space 2} 23.62138{col 37}{space 1}    0.09{col 46}{space 3}0.930{col 54}{space 4}-44.23277{col 67}{space 3} 48.38042
+{txt}{space 12} {c |}
+interest_e~e {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-30.42924{col 26}{space 2} 11.31968{col 37}{space 1}   -2.69{col 46}{space 3}0.007{col 54}{space 4}-52.61997{col 67}{space 3}-8.238505
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}-28.87193{col 26}{space 2} 16.35262{col 37}{space 1}   -1.77{col 46}{space 3}0.078{col 54}{space 4}-60.92908{col 67}{space 3} 3.185227
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-27.71408{col 26}{space 2} 19.63068{col 37}{space 1}   -1.41{col 46}{space 3}0.158{col 54}{space 4}-66.19742{col 67}{space 3} 10.76927
+{txt}{space 10}5  {c |}{col 14}{res}{space 2}-43.45036{col 26}{space 2} 23.90349{col 37}{space 1}   -1.82{col 46}{space 3}0.069{col 54}{space 4}-90.30999{col 67}{space 3} 3.409264
+{txt}{space 12} {c |}
+intera~1_ile {c |}
+{space 10}2  {c |}{col 14}{res}{space 2} 10.32018{col 26}{space 2} 9.960878{col 37}{space 1}    1.04{col 46}{space 3}0.300{col 54}{space 4}-9.206805{col 67}{space 3} 29.84717
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}-4.753293{col 26}{space 2} 10.23778{col 37}{space 1}   -0.46{col 46}{space 3}0.642{col 54}{space 4}-24.82311{col 67}{space 3} 15.31652
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-12.50706{col 26}{space 2} 12.19436{col 37}{space 1}   -1.03{col 46}{space 3}0.305{col 54}{space 4}-36.41249{col 67}{space 3} 11.39836
+{txt}{space 10}5  {c |}{col 14}{res}{space 2}-16.23354{col 26}{space 2} 14.56368{col 37}{space 1}   -1.11{col 46}{space 3}0.265{col 54}{space 4}-44.78371{col 67}{space 3} 12.31663
+{txt}{space 12} {c |}
+intera~2_ile {c |}
+{space 10}2  {c |}{col 14}{res}{space 2} 18.77633{col 26}{space 2} 16.39257{col 37}{space 1}    1.15{col 46}{space 3}0.252{col 54}{space 4}-13.35914{col 67}{space 3}  50.9118
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} 32.21595{col 26}{space 2} 16.98761{col 37}{space 1}    1.90{col 46}{space 3}0.058{col 54}{space 4}-1.086021{col 67}{space 3} 65.51792
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}  20.9837{col 26}{space 2} 19.21868{col 37}{space 1}    1.09{col 46}{space 3}0.275{col 54}{space 4}-16.69197{col 67}{space 3} 58.65938
+{txt}{space 10}5  {c |}{col 14}{res}{space 2}-2.760463{col 26}{space 2} 21.49844{col 37}{space 1}   -0.13{col 46}{space 3}0.898{col 54}{space 4}-44.90532{col 67}{space 3}  39.3844
+{txt}{space 12} {c |}
+intera~3_ile {c |}
+{space 10}2  {c |}{col 14}{res}{space 2} 20.76365{col 26}{space 2} 11.66258{col 37}{space 1}    1.78{col 46}{space 3}0.075{col 54}{space 4}-2.099298{col 67}{space 3}  43.6266
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} 11.09091{col 26}{space 2} 16.36351{col 37}{space 1}    0.68{col 46}{space 3}0.498{col 54}{space 4}-20.98759{col 67}{space 3} 43.16941
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-2.054873{col 26}{space 2} 19.52231{col 37}{space 1}   -0.11{col 46}{space 3}0.916{col 54}{space 4}-40.32579{col 67}{space 3} 36.21604
+{txt}{space 10}5  {c |}{col 14}{res}{space 2} 6.355956{col 26}{space 2}  22.7109{col 37}{space 1}    0.28{col 46}{space 3}0.780{col 54}{space 4}-38.16576{col 67}{space 3} 50.87767
+{txt}{space 12} {c |}
+intera~4_ile {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-33.80241{col 26}{space 2} 14.53739{col 37}{space 1}   -2.33{col 46}{space 3}0.020{col 54}{space 4}-62.30104{col 67}{space 3}-5.303781
+{txt}{space 10}3  {c |}{col 14}{res}{space 2}-33.48075{col 26}{space 2} 16.54708{col 37}{space 1}   -2.02{col 46}{space 3}0.043{col 54}{space 4}-65.91912{col 67}{space 3} -1.04238
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-28.27966{col 26}{space 2} 18.23955{col 37}{space 1}   -1.55{col 46}{space 3}0.121{col 54}{space 4}-64.03589{col 67}{space 3} 7.476561
+{txt}{space 10}5  {c |}{col 14}{res}{space 2}-16.19729{col 26}{space 2} 20.43626{col 37}{space 1}   -0.79{col 46}{space 3}0.428{col 54}{space 4}-56.25988{col 67}{space 3}  23.8653
+{txt}{space 12} {c |}
+{space 9}cal {c |}
+{space 10}6  {c |}{col 14}{res}{space 2}-15.67786{col 26}{space 2}  12.6455{col 37}{space 1}   -1.24{col 46}{space 3}0.215{col 54}{space 4}-40.46769{col 67}{space 3} 9.111963
+{txt}{space 10}7  {c |}{col 14}{res}{space 2}-21.82406{col 26}{space 2} 12.81136{col 37}{space 1}   -1.70{col 46}{space 3}0.089{col 54}{space 4}-46.93904{col 67}{space 3}  3.29092
+{txt}{space 10}8  {c |}{col 14}{res}{space 2}-25.60176{col 26}{space 2} 12.00413{col 37}{space 1}   -2.13{col 46}{space 3}0.033{col 54}{space 4}-49.13426{col 67}{space 3}-2.069252
+{txt}{space 10}9  {c |}{col 14}{res}{space 2}  24.9303{col 26}{space 2} 11.70174{col 37}{space 1}    2.13{col 46}{space 3}0.033{col 54}{space 4} 1.990581{col 67}{space 3} 47.87002
+{txt}{space 9}10  {c |}{col 14}{res}{space 2}-17.76104{col 26}{space 2} 12.87002{col 37}{space 1}   -1.38{col 46}{space 3}0.168{col 54}{space 4}-42.99101{col 67}{space 3}  7.46894
+{txt}{space 9}11  {c |}{col 14}{res}{space 2}-3.635332{col 26}{space 2} 13.21559{col 37}{space 1}   -0.28{col 46}{space 3}0.783{col 54}{space 4}-29.54276{col 67}{space 3}  22.2721
+{txt}{space 9}12  {c |}{col 14}{res}{space 2} 10.97129{col 26}{space 2} 13.12515{col 37}{space 1}    0.84{col 46}{space 3}0.403{col 54}{space 4}-14.75884{col 67}{space 3} 36.70141
+{txt}{space 9}13  {c |}{col 14}{res}{space 2}  42.3773{col 26}{space 2} 12.17584{col 37}{space 1}    3.48{col 46}{space 3}0.001{col 54}{space 4} 18.50817{col 67}{space 3} 66.24642
+{txt}{space 9}14  {c |}{col 14}{res}{space 2} 14.51935{col 26}{space 2} 12.96036{col 37}{space 1}    1.12{col 46}{space 3}0.263{col 54}{space 4}-10.88772{col 67}{space 3} 39.92642
+{txt}{space 9}15  {c |}{col 14}{res}{space 2}-5.626319{col 26}{space 2} 13.30197{col 37}{space 1}   -0.42{col 46}{space 3}0.672{col 54}{space 4}-31.70308{col 67}{space 3} 20.45044
+{txt}{space 9}16  {c |}{col 14}{res}{space 2}-3.634578{col 26}{space 2} 13.34198{col 37}{space 1}   -0.27{col 46}{space 3}0.785{col 54}{space 4}-29.78978{col 67}{space 3} 22.52062
+{txt}{space 9}17  {c |}{col 14}{res}{space 2} 24.63421{col 26}{space 2} 12.53647{col 37}{space 1}    1.97{col 46}{space 3}0.049{col 54}{space 4} .0581136{col 67}{space 3}  49.2103
+{txt}{space 9}18  {c |}{col 14}{res}{space 2}-2.248218{col 26}{space 2} 13.41312{col 37}{space 1}   -0.17{col 46}{space 3}0.867{col 54}{space 4}-28.54288{col 67}{space 3} 24.04644
+{txt}{space 9}19  {c |}{col 14}{res}{space 2}-14.39013{col 26}{space 2} 13.57251{col 37}{space 1}   -1.06{col 46}{space 3}0.289{col 54}{space 4}-40.99724{col 67}{space 3} 12.21697
+{txt}{space 9}20  {c |}{col 14}{res}{space 2}-23.62968{col 26}{space 2} 13.29653{col 37}{space 1}   -1.78{col 46}{space 3}0.076{col 54}{space 4}-49.69577{col 67}{space 3} 2.436408
+{txt}{space 9}21  {c |}{col 14}{res}{space 2}-8.622112{col 26}{space 2} 12.59956{col 37}{space 1}   -0.68{col 46}{space 3}0.494{col 54}{space 4}-33.32188{col 67}{space 3} 16.07766
+{txt}{space 9}22  {c |}{col 14}{res}{space 2}-33.61272{col 26}{space 2} 13.21274{col 37}{space 1}   -2.54{col 46}{space 3}0.011{col 54}{space 4}-59.51456{col 67}{space 3}-7.710879
+{txt}{space 9}23  {c |}{col 14}{res}{space 2}-39.74645{col 26}{space 2} 13.46295{col 37}{space 1}   -2.95{col 46}{space 3}0.003{col 54}{space 4} -66.1388{col 67}{space 3}-13.35411
+{txt}{space 9}24  {c |}{col 14}{res}{space 2}-50.33949{col 26}{space 2} 13.49816{col 37}{space 1}   -3.73{col 46}{space 3}0.000{col 54}{space 4}-76.80084{col 67}{space 3}-23.87814
+{txt}{space 9}25  {c |}{col 14}{res}{space 2}-21.10126{col 26}{space 2} 12.73009{col 37}{space 1}   -1.66{col 46}{space 3}0.097{col 54}{space 4}-46.05693{col 67}{space 3} 3.854405
+{txt}{space 9}26  {c |}{col 14}{res}{space 2}-41.98009{col 26}{space 2} 13.71446{col 37}{space 1}   -3.06{col 46}{space 3}0.002{col 54}{space 4}-68.86547{col 67}{space 3}-15.09471
+{txt}{space 9}27  {c |}{col 14}{res}{space 2}-56.97344{col 26}{space 2} 13.80358{col 37}{space 1}   -4.13{col 46}{space 3}0.000{col 54}{space 4}-84.03353{col 67}{space 3}-29.91336
+{txt}{space 9}28  {c |}{col 14}{res}{space 2}-55.67553{col 26}{space 2} 13.48175{col 37}{space 1}   -4.13{col 46}{space 3}0.000{col 54}{space 4}-82.10471{col 67}{space 3}-29.24635
+{txt}{space 9}29  {c |}{col 14}{res}{space 2}-26.41977{col 26}{space 2} 12.60513{col 37}{space 1}   -2.10{col 46}{space 3}0.036{col 54}{space 4}-51.13045{col 67}{space 3}-1.709086
+{txt}{space 9}30  {c |}{col 14}{res}{space 2}-27.66764{col 26}{space 2}  13.5693{col 37}{space 1}   -2.04{col 46}{space 3}0.041{col 54}{space 4}-54.26847{col 67}{space 3}-1.066815
+{txt}{space 9}31  {c |}{col 14}{res}{space 2}-35.22109{col 26}{space 2}  13.5235{col 37}{space 1}   -2.60{col 46}{space 3}0.009{col 54}{space 4}-61.73213{col 67}{space 3}-8.710052
+{txt}{space 9}32  {c |}{col 14}{res}{space 2}-36.54295{col 26}{space 2}  13.8159{col 37}{space 1}   -2.64{col 46}{space 3}0.008{col 54}{space 4}-63.62719{col 67}{space 3}-9.458707
+{txt}{space 9}33  {c |}{col 14}{res}{space 2} -20.7775{col 26}{space 2} 13.27676{col 37}{space 1}   -1.56{col 46}{space 3}0.118{col 54}{space 4}-46.80484{col 67}{space 3}  5.24983
+{txt}{space 9}34  {c |}{col 14}{res}{space 2}-29.86256{col 26}{space 2} 14.14558{col 37}{space 1}   -2.11{col 46}{space 3}0.035{col 54}{space 4}-57.59309{col 67}{space 3}-2.132023
+{txt}{space 9}35  {c |}{col 14}{res}{space 2}-50.40358{col 26}{space 2} 14.10222{col 37}{space 1}   -3.57{col 46}{space 3}0.000{col 54}{space 4}-78.04912{col 67}{space 3}-22.75804
+{txt}{space 9}36  {c |}{col 14}{res}{space 2}-27.16871{col 26}{space 2} 13.86905{col 37}{space 1}   -1.96{col 46}{space 3}0.050{col 54}{space 4}-54.35715{col 67}{space 3} .0197241
+{txt}{space 9}37  {c |}{col 14}{res}{space 2}-7.023156{col 26}{space 2}  13.2454{col 37}{space 1}   -0.53{col 46}{space 3}0.596{col 54}{space 4}-32.98901{col 67}{space 3}  18.9427
+{txt}{space 9}38  {c |}{col 14}{res}{space 2}-27.87395{col 26}{space 2} 14.08571{col 37}{space 1}   -1.98{col 46}{space 3}0.048{col 54}{space 4}-55.48713{col 67}{space 3}-.2607672
+{txt}{space 9}39  {c |}{col 14}{res}{space 2}-49.26695{col 26}{space 2}  14.3901{col 37}{space 1}   -3.42{col 46}{space 3}0.001{col 54}{space 4}-77.47683{col 67}{space 3}-21.05707
+{txt}{space 9}40  {c |}{col 14}{res}{space 2}-23.22677{col 26}{space 2} 14.13854{col 37}{space 1}   -1.64{col 46}{space 3}0.100{col 54}{space 4} -50.9435{col 67}{space 3} 4.489963
+{txt}{space 9}41  {c |}{col 14}{res}{space 2}-23.29231{col 26}{space 2}  13.9392{col 37}{space 1}   -1.67{col 46}{space 3}0.095{col 54}{space 4}-50.61827{col 67}{space 3} 4.033654
+{txt}{space 9}42  {c |}{col 14}{res}{space 2}-3.676596{col 26}{space 2} 15.31257{col 37}{space 1}   -0.24{col 46}{space 3}0.810{col 54}{space 4}-33.69486{col 67}{space 3} 26.34167
+{txt}{space 9}43  {c |}{col 14}{res}{space 2}-23.09688{col 26}{space 2} 28.99508{col 37}{space 1}   -0.80{col 46}{space 3}0.426{col 54}{space 4} -79.9379{col 67}{space 3} 33.74414
+{txt}{space 9}44  {c |}{col 14}{res}{space 2}-40.28397{col 26}{space 2} 47.96772{col 37}{space 1}   -0.84{col 46}{space 3}0.401{col 54}{space 4}-134.3184{col 67}{space 3} 53.75041
+{txt}{space 12} {c |}
+{space 8}fqtr {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-26.83917{col 26}{space 2} 5.869808{col 37}{space 1}   -4.57{col 46}{space 3}0.000{col 54}{space 4}-38.34615{col 67}{space 3}-15.33219
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} -45.5682{col 26}{space 2}  5.91422{col 37}{space 1}   -7.70{col 46}{space 3}0.000{col 54}{space 4}-57.16224{col 67}{space 3}-33.97415
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-70.63399{col 26}{space 2} 6.106235{col 37}{space 1}  -11.57{col 46}{space 3}0.000{col 54}{space 4}-82.60446{col 67}{space 3}-58.66352
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2}   376.02{col 26}{space 2} 48.86123{col 37}{space 1}    7.70{col 46}{space 3}0.000{col 54}{space 4}  280.234{col 67}{space 3}  471.806
+{txt}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+     sigma_u {c |} {res} 270.67833
+     {txt}sigma_e {c |} {res} 422.57208
+         {txt}rho {c |} {res} .29093283{txt}   (fraction of variance due to u_i)
+{hline 13}{c BT}{hline 64}
+
+{com}. outreg2 using "/Users/yukerui/Desktop/panela4.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/panela4.doc"'"':/Users/yukerui/Desktop/panela4.doc}
+{browse `"/Users/yukerui/Desktop/paper 2/paper 2 dofile"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/panela4.txt""':seeout}
+
+{com}. 
+. * Output panel B
+
+. * Column 1
+
+. gen bnet_debt_issuance = D.net_debt_issuance
+{txt}(11,570 missing values generated)
+
+{com}. reghdfe bnet_debt_issuance viol lviol, absorb(cal fqtr) vce(cluster gvkey) 
+{res}{txt}({browse "http://scorreia.com/research/hdfe.pdf":MWFE estimator} converged in 5 iterations)
+{res}
+{txt}HDFE Linear regression{col 51}Number of obs{col 67}= {res}   105,673
+{txt}Absorbing 2 HDFE groups{col 51}F({res}   2{txt},{res}   6268{txt}){col 67}= {res}     44.20
+{txt}Statistics robust to heteroskedasticity{col 51}Prob > F{col 67}= {res}    0.0000
+{txt}{col 51}R-squared{col 67}= {res}    0.0035
+{txt}{col 51}Adj R-squared{col 67}= {res}    0.0031
+{txt}{col 51}Within R-sq.{col 67}= {res}    0.0006
+{txt}{col 1}Number of clusters ({res}gvkey{txt}) {col 30}= {res}     6,269{txt}{col 51}Root MSE{col 67}= {res}  646.1215
+
+{txt}{ralign 78:(Std. err. adjusted for {res:6,269} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}bnet_debt_~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 8}viol {c |}{col 14}{res}{space 2} 25.68204{col 26}{space 2} 10.58006{col 37}{space 1}    2.43{col 46}{space 3}0.015{col 54}{space 4} 4.941494{col 67}{space 3} 46.42258
+{txt}{space 7}lviol {c |}{col 14}{res}{space 2}-74.27516{col 26}{space 2} 10.95471{col 37}{space 1}   -6.78{col 46}{space 3}0.000{col 54}{space 4}-95.75014{col 67}{space 3}-52.80017
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2} -.704115{col 26}{space 2} .7508296{col 37}{space 1}   -0.94{col 46}{space 3}0.348{col 54}{space 4}-2.175998{col 67}{space 3} .7677682
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}
+{txt}Absorbed degrees of freedom:
+{res}{col 1}{text}{hline 13}{c TT}{hline 12}{hline 12}{hline 14}{hline 1}{c TRC}
+{col 1}{text} Absorbed FE{col 14}{c |} Categories{col 27} - Redundant{col 39}  = Num. Coefs{col 54}{c |}
+{res}{col 1}{text}{hline 13}{c +}{hline 12}{hline 12}{hline 14}{hline 1}{c RT}
+{col 1}{text}         cal{col 14}{c |}{space 1}       40{col 27}{space 1}        0{col 39}{result}{space 1}       40{col 53}{text} {col 54}{c |}
+{res}{col 1}{text}        fqtr{col 14}{c |}{space 1}        4{col 27}{space 1}        1{col 39}{result}{space 1}        3{col 53}{text} {col 54}{c |}
+{res}{col 1}{text}{hline 13}{c BT}{hline 12}{hline 12}{hline 14}{hline 1}{c BRC}
+{res}
+{com}. outreg2 using "/Users/yukerui/Desktop/panelb1.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/panelb1.doc"'"':/Users/yukerui/Desktop/panelb1.doc}
+{browse `"/Users/yukerui/Desktop/paper 2/paper 2 dofile"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/panelb1.txt""':seeout}
+
+{com}. 
+. xtreg bnet_debt_issuance viol lviol i.cal i.fqtr, vce(cluster gvkey) 
+{res}
+{txt}Random-effects GLS regression                   Number of obs     = {res}   105,673
+{txt}Group variable: {res}gvkey                           {txt}Number of groups  = {res}     6,269
+
+{txt}R-squared:                                      Obs per group:
+     Within  = {res}0.0035                                         {txt}min = {res}         1
+{txt}     Between = {res}0.0098                                         {txt}avg = {res}      16.9
+{txt}     Overall = {res}0.0035                                         {txt}max = {res}        39
+
+                                                {txt}Wald chi2({res}44{txt})     =  {res}   326.19
+{txt}corr(u_i, X) = {res}0{txt} (assumed)                      Prob > chi2       =     {res}0.0000
+
+{txt}{ralign 78:(Std. err. adjusted for {res:6,269} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}bnet_debt_~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      z{col 46}   P>|z|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 8}viol {c |}{col 14}{res}{space 2} 25.68204{col 26}{space 2} 10.58006{col 37}{space 1}    2.43{col 46}{space 3}0.015{col 54}{space 4} 4.945499{col 67}{space 3} 46.41858
+{txt}{space 7}lviol {c |}{col 14}{res}{space 2}-74.27516{col 26}{space 2} 10.95471{col 37}{space 1}   -6.78{col 46}{space 3}0.000{col 54}{space 4}  -95.746{col 67}{space 3}-52.80431
+{txt}{space 12} {c |}
+{space 9}cal {c |}
+{space 10}6  {c |}{col 14}{res}{space 2}-43.59425{col 26}{space 2} 21.39946{col 37}{space 1}   -2.04{col 46}{space 3}0.042{col 54}{space 4}-85.53642{col 67}{space 3}-1.652071
+{txt}{space 10}7  {c |}{col 14}{res}{space 2}-19.13548{col 26}{space 2} 18.58959{col 37}{space 1}   -1.03{col 46}{space 3}0.303{col 54}{space 4}-55.57041{col 67}{space 3} 17.29944
+{txt}{space 10}8  {c |}{col 14}{res}{space 2}-15.78047{col 26}{space 2} 18.51253{col 37}{space 1}   -0.85{col 46}{space 3}0.394{col 54}{space 4}-52.06436{col 67}{space 3} 20.50341
+{txt}{space 10}9  {c |}{col 14}{res}{space 2} 14.55854{col 26}{space 2} 16.60347{col 37}{space 1}    0.88{col 46}{space 3}0.381{col 54}{space 4}-17.98367{col 67}{space 3} 47.10075
+{txt}{space 9}10  {c |}{col 14}{res}{space 2}-66.20725{col 26}{space 2}    19.08{col 37}{space 1}   -3.47{col 46}{space 3}0.001{col 54}{space 4}-103.6034{col 67}{space 3}-28.81114
+{txt}{space 9}11  {c |}{col 14}{res}{space 2}-22.04439{col 26}{space 2} 18.88478{col 37}{space 1}   -1.17{col 46}{space 3}0.243{col 54}{space 4}-59.05788{col 67}{space 3} 14.96911
+{txt}{space 9}12  {c |}{col 14}{res}{space 2}-.4429464{col 26}{space 2} 18.94908{col 37}{space 1}   -0.02{col 46}{space 3}0.981{col 54}{space 4}-37.58246{col 67}{space 3} 36.69656
+{txt}{space 9}13  {c |}{col 14}{res}{space 2} 7.267216{col 26}{space 2} 17.00934{col 37}{space 1}    0.43{col 46}{space 3}0.669{col 54}{space 4}-26.07048{col 67}{space 3} 40.60491
+{txt}{space 9}14  {c |}{col 14}{res}{space 2}-68.16184{col 26}{space 2} 18.37597{col 37}{space 1}   -3.71{col 46}{space 3}0.000{col 54}{space 4}-104.1781{col 67}{space 3} -32.1456
+{txt}{space 9}15  {c |}{col 14}{res}{space 2}-56.30404{col 26}{space 2} 18.74756{col 37}{space 1}   -3.00{col 46}{space 3}0.003{col 54}{space 4}-93.04859{col 67}{space 3} -19.5595
+{txt}{space 9}16  {c |}{col 14}{res}{space 2}-21.58334{col 26}{space 2} 18.82579{col 37}{space 1}   -1.15{col 46}{space 3}0.252{col 54}{space 4}-58.48121{col 67}{space 3} 15.31454
+{txt}{space 9}17  {c |}{col 14}{res}{space 2} 5.126453{col 26}{space 2} 16.96315{col 37}{space 1}    0.30{col 46}{space 3}0.762{col 54}{space 4}-28.12071{col 67}{space 3} 38.37361
+{txt}{space 9}18  {c |}{col 14}{res}{space 2}-61.21853{col 26}{space 2}  18.6655{col 37}{space 1}   -3.28{col 46}{space 3}0.001{col 54}{space 4}-97.80224{col 67}{space 3}-24.63482
+{txt}{space 9}19  {c |}{col 14}{res}{space 2}-38.29474{col 26}{space 2} 19.06612{col 37}{space 1}   -2.01{col 46}{space 3}0.045{col 54}{space 4}-75.66365{col 67}{space 3}-.9258283
+{txt}{space 9}20  {c |}{col 14}{res}{space 2}-33.67203{col 26}{space 2} 18.34392{col 37}{space 1}   -1.84{col 46}{space 3}0.066{col 54}{space 4}-69.62547{col 67}{space 3} 2.281396
+{txt}{space 9}21  {c |}{col 14}{res}{space 2}-5.922337{col 26}{space 2} 16.60488{col 37}{space 1}   -0.36{col 46}{space 3}0.721{col 54}{space 4}-38.46731{col 67}{space 3} 26.62263
+{txt}{space 9}22  {c |}{col 14}{res}{space 2}-50.45663{col 26}{space 2} 17.93692{col 37}{space 1}   -2.81{col 46}{space 3}0.005{col 54}{space 4}-85.61235{col 67}{space 3}-15.30091
+{txt}{space 9}23  {c |}{col 14}{res}{space 2}-36.91121{col 26}{space 2} 18.15326{col 37}{space 1}   -2.03{col 46}{space 3}0.042{col 54}{space 4}-72.49094{col 67}{space 3} -1.33148
+{txt}{space 9}24  {c |}{col 14}{res}{space 2}-41.43681{col 26}{space 2} 18.30218{col 37}{space 1}   -2.26{col 46}{space 3}0.024{col 54}{space 4}-77.30842{col 67}{space 3}-5.565194
+{txt}{space 9}25  {c |}{col 14}{res}{space 2} 14.30627{col 26}{space 2} 16.55296{col 37}{space 1}    0.86{col 46}{space 3}0.387{col 54}{space 4}-18.13692{col 67}{space 3} 46.74947
+{txt}{space 9}26  {c |}{col 14}{res}{space 2}-62.58977{col 26}{space 2} 18.44921{col 37}{space 1}   -3.39{col 46}{space 3}0.001{col 54}{space 4}-98.74955{col 67}{space 3}-26.42998
+{txt}{space 9}27  {c |}{col 14}{res}{space 2}-39.26698{col 26}{space 2}  18.1907{col 37}{space 1}   -2.16{col 46}{space 3}0.031{col 54}{space 4}-74.92009{col 67}{space 3} -3.61387
+{txt}{space 9}28  {c |}{col 14}{res}{space 2}-13.17747{col 26}{space 2} 18.44843{col 37}{space 1}   -0.71{col 46}{space 3}0.475{col 54}{space 4}-49.33572{col 67}{space 3} 22.98079
+{txt}{space 9}29  {c |}{col 14}{res}{space 2} 13.95442{col 26}{space 2} 16.25669{col 37}{space 1}    0.86{col 46}{space 3}0.391{col 54}{space 4} -17.9081{col 67}{space 3} 45.81693
+{txt}{space 9}30  {c |}{col 14}{res}{space 2}-26.36195{col 26}{space 2} 18.18681{col 37}{space 1}   -1.45{col 46}{space 3}0.147{col 54}{space 4}-62.00744{col 67}{space 3}  9.28355
+{txt}{space 9}31  {c |}{col 14}{res}{space 2}-34.54584{col 26}{space 2} 18.18411{col 37}{space 1}   -1.90{col 46}{space 3}0.057{col 54}{space 4}-70.18605{col 67}{space 3} 1.094364
+{txt}{space 9}32  {c |}{col 14}{res}{space 2}-12.96908{col 26}{space 2} 18.43668{col 37}{space 1}   -0.70{col 46}{space 3}0.482{col 54}{space 4}-49.10431{col 67}{space 3} 23.16615
+{txt}{space 9}33  {c |}{col 14}{res}{space 2}-8.736797{col 26}{space 2} 16.99558{col 37}{space 1}   -0.51{col 46}{space 3}0.607{col 54}{space 4}-42.04752{col 67}{space 3} 24.57392
+{txt}{space 9}34  {c |}{col 14}{res}{space 2}-33.58584{col 26}{space 2}  18.7285{col 37}{space 1}   -1.79{col 46}{space 3}0.073{col 54}{space 4}-70.29303{col 67}{space 3} 3.121343
+{txt}{space 9}35  {c |}{col 14}{res}{space 2}-57.37682{col 26}{space 2} 18.81219{col 37}{space 1}   -3.05{col 46}{space 3}0.002{col 54}{space 4}-94.24804{col 67}{space 3} -20.5056
+{txt}{space 9}36  {c |}{col 14}{res}{space 2} 13.57213{col 26}{space 2} 18.29705{col 37}{space 1}    0.74{col 46}{space 3}0.458{col 54}{space 4}-22.28943{col 67}{space 3}  49.4337
+{txt}{space 9}37  {c |}{col 14}{res}{space 2}-6.571812{col 26}{space 2} 16.60568{col 37}{space 1}   -0.40{col 46}{space 3}0.692{col 54}{space 4}-39.11834{col 67}{space 3} 25.97472
+{txt}{space 9}38  {c |}{col 14}{res}{space 2}-37.61859{col 26}{space 2} 18.31163{col 37}{space 1}   -2.05{col 46}{space 3}0.040{col 54}{space 4}-73.50872{col 67}{space 3} -1.72846
+{txt}{space 9}39  {c |}{col 14}{res}{space 2}-36.63195{col 26}{space 2} 18.57789{col 37}{space 1}   -1.97{col 46}{space 3}0.049{col 54}{space 4}-73.04395{col 67}{space 3}-.2199521
+{txt}{space 9}40  {c |}{col 14}{res}{space 2}-.5292214{col 26}{space 2} 18.55182{col 37}{space 1}   -0.03{col 46}{space 3}0.977{col 54}{space 4}-36.89012{col 67}{space 3} 35.83168
+{txt}{space 9}41  {c |}{col 14}{res}{space 2}-11.88756{col 26}{space 2} 17.10976{col 37}{space 1}   -0.69{col 46}{space 3}0.487{col 54}{space 4}-45.42207{col 67}{space 3} 21.64694
+{txt}{space 9}42  {c |}{col 14}{res}{space 2}-12.01181{col 26}{space 2} 19.15055{col 37}{space 1}   -0.63{col 46}{space 3}0.531{col 54}{space 4} -49.5462{col 67}{space 3} 25.52257
+{txt}{space 9}43  {c |}{col 14}{res}{space 2}-47.73457{col 26}{space 2} 34.50508{col 37}{space 1}   -1.38{col 46}{space 3}0.167{col 54}{space 4}-115.3633{col 67}{space 3} 19.89415
+{txt}{space 9}44  {c |}{col 14}{res}{space 2}-28.14762{col 26}{space 2} 71.57723{col 37}{space 1}   -0.39{col 46}{space 3}0.694{col 54}{space 4}-168.4364{col 67}{space 3} 112.1412
+{txt}{space 12} {c |}
+{space 8}fqtr {c |}
+{space 10}2  {c |}{col 14}{res}{space 2}-85.96791{col 26}{space 2} 11.10585{col 37}{space 1}   -7.74{col 46}{space 3}0.000{col 54}{space 4} -107.735{col 67}{space 3}-64.20084
+{txt}{space 10}3  {c |}{col 14}{res}{space 2} -85.5147{col 26}{space 2} 9.022665{col 37}{space 1}   -9.48{col 46}{space 3}0.000{col 54}{space 4}-103.1988{col 67}{space 3} -67.8306
+{txt}{space 10}4  {c |}{col 14}{res}{space 2}-69.69004{col 26}{space 2} 10.95608{col 37}{space 1}   -6.36{col 46}{space 3}0.000{col 54}{space 4}-91.16356{col 67}{space 3}-48.21653
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} 85.90382{col 26}{space 2} 14.60286{col 37}{space 1}    5.88{col 46}{space 3}0.000{col 54}{space 4} 57.28275{col 67}{space 3} 114.5249
+{txt}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+     sigma_u {c |} {res}         0
+     {txt}sigma_e {c |} {res} 662.09978
+         {txt}rho {c |} {res}         0{txt}   (fraction of variance due to u_i)
+{hline 13}{c BT}{hline 64}
+
+{com}. 
+. * Column 2
+
+. gen blln_asset = D.lln_asset
+{txt}(22,269 missing values generated)
+
+{com}. gen bltangible_asset = D.ltangible_asset 
+{txt}(22,269 missing values generated)
+
+{com}. gen blmarket_to_book = D.lmarket_to_book
+{txt}(21,808 missing values generated)
+
+{com}. gen blspind = D.lspind
+{txt}(35,607 missing values generated)
+
+{com}. 
+. gen bbook_debt_asset = book_debt_asset - L2.book_debt_asset
+{txt}(22,313 missing values generated)
+
+{com}. gen blnet_worth_assets = D.lnet_worth_assets
+{txt}(22,269 missing values generated)
+
+{com}. gen blcash_asset = D.lcash_asset
+{txt}(22,269 missing values generated)
+
+{com}. gen blebitda_asset = D.lebitda_asset
+{txt}(22,280 missing values generated)
+
+{com}. gen bebitda_asset = D.ebitda_asset
+{txt}(11,570 missing values generated)
+
+{com}. gen blcash_flow_asset = D.lcash_flow_asset
+{txt}(22,280 missing values generated)
+
+{com}. gen bcash_flow_asset = D.cash_flow_asset
+{txt}(11,570 missing values generated)
+
+{com}. gen blnet_income_asset = D.lnet_income_asset
+{txt}(22,280 missing values generated)
+
+{com}. gen bnet_income_asset = D.net_income_asset
+{txt}(11,570 missing values generated)
+
+{com}. gen blinterest_expense_asset = D.linterest_expense_asset
+{txt}(22,280 missing values generated)
+
+{com}. gen binterest_expense_asset = D.interest_expense_asset
+{txt}(11,570 missing values generated)
+
+{com}. 
+. reghdfe bnet_debt_issuance viol lviol blln_asset bltangible_asset blmarket_to_book blspind bbook_debt_asset blnet_worth_assets blcash_asset blebitda_asset bebitda_asset blcash_flow_asset bcash_flow_asset blnet_income_asset bnet_income_asset blinterest_expense_asset binterest_expense_asset, absorb(cal fqtr) vce(cluster gvkey)
+{res}{txt}({browse "http://scorreia.com/research/hdfe.pdf":MWFE estimator} converged in 5 iterations)
+{res}
+{txt}HDFE Linear regression{col 51}Number of obs{col 67}= {res}    91,724
+{txt}Absorbing 2 HDFE groups{col 51}F({res}  17{txt},{res}   5814{txt}){col 67}= {res}    138.32
+{txt}Statistics robust to heteroskedasticity{col 51}Prob > F{col 67}= {res}    0.0000
+{txt}{col 51}R-squared{col 67}= {res}    0.1725
+{txt}{col 51}Adj R-squared{col 67}= {res}    0.1720
+{txt}{col 51}Within R-sq.{col 67}= {res}    0.1698
+{txt}{col 1}Number of clusters ({res}gvkey{txt}) {col 30}= {res}     5,815{txt}{col 51}Root MSE{col 67}= {res}  580.5639
+
+{txt}{ralign 78:(Std. err. adjusted for {res:5,815} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}bnet_debt_~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 8}viol {c |}{col 14}{res}{space 2}  17.0986{col 26}{space 2} 10.21593{col 37}{space 1}    1.67{col 46}{space 3}0.094{col 54}{space 4}-2.928412{col 67}{space 3} 37.12562
+{txt}{space 7}lviol {c |}{col 14}{res}{space 2}-70.14507{col 26}{space 2} 10.32939{col 37}{space 1}   -6.79{col 46}{space 3}0.000{col 54}{space 4}-90.39452{col 67}{space 3}-49.89563
+{txt}{space 2}blln_asset {c |}{col 14}{res}{space 2}-961.3538{col 26}{space 2} 27.41335{col 37}{space 1}  -35.07{col 46}{space 3}0.000{col 54}{space 4}-1015.094{col 67}{space 3}-907.6135
+{txt}bltangible~t {c |}{col 14}{res}{space 2} 653.7639{col 26}{space 2} 93.15749{col 37}{space 1}    7.02{col 46}{space 3}0.000{col 54}{space 4} 471.1406{col 67}{space 3} 836.3873
+{txt}blmarket_t~k {c |}{col 14}{res}{space 2} -14.0332{col 26}{space 2} 1.618355{col 37}{space 1}   -8.67{col 46}{space 3}0.000{col 54}{space 4}-17.20577{col 67}{space 3}-10.86062
+{txt}{space 5}blspind {c |}{col 14}{res}{space 2} 87.54956{col 26}{space 2} 33.88284{col 37}{space 1}    2.58{col 46}{space 3}0.010{col 54}{space 4} 21.12659{col 67}{space 3} 153.9725
+{txt}bbook_debt~t {c |}{col 14}{res}{space 2} 940.6659{col 26}{space 2} 46.26198{col 37}{space 1}   20.33{col 46}{space 3}0.000{col 54}{space 4} 849.9752{col 67}{space 3} 1031.357
+{txt}blnet_wort~s {c |}{col 14}{res}{space 2} 2226.743{col 26}{space 2} 82.59723{col 37}{space 1}   26.96{col 46}{space 3}0.000{col 54}{space 4} 2064.822{col 67}{space 3} 2388.664
+{txt}blcash_asset {c |}{col 14}{res}{space 2} 9.868087{col 26}{space 2} 51.37273{col 37}{space 1}    0.19{col 46}{space 3}0.848{col 54}{space 4}-90.84158{col 67}{space 3} 110.5778
+{txt}blebitda_a~t {c |}{col 14}{res}{space 2}-246.1754{col 26}{space 2}   116.98{col 37}{space 1}   -2.10{col 46}{space 3}0.035{col 54}{space 4}-475.4997{col 67}{space 3}-16.85109
+{txt}bebitda_as~t {c |}{col 14}{res}{space 2} 2.507607{col 26}{space 2} 123.7595{col 37}{space 1}    0.02{col 46}{space 3}0.984{col 54}{space 4}-240.1071{col 67}{space 3} 245.1224
+{txt}blcash_flo~t {c |}{col 14}{res}{space 2} 63.22524{col 26}{space 2} 132.3237{col 37}{space 1}    0.48{col 46}{space 3}0.633{col 54}{space 4}-196.1785{col 67}{space 3}  322.629
+{txt}bcash_flow~t {c |}{col 14}{res}{space 2} 284.8473{col 26}{space 2} 154.9564{col 37}{space 1}    1.84{col 46}{space 3}0.066{col 54}{space 4}-18.92498{col 67}{space 3} 588.6195
+{txt}blnet_inco~t {c |}{col 14}{res}{space 2}-142.3997{col 26}{space 2} 119.1323{col 37}{space 1}   -1.20{col 46}{space 3}0.232{col 54}{space 4}-375.9433{col 67}{space 3}   91.144
+{txt}bnet_incom~t {c |}{col 14}{res}{space 2}-278.0684{col 26}{space 2} 141.2992{col 37}{space 1}   -1.97{col 46}{space 3}0.049{col 54}{space 4}-555.0674{col 67}{space 3}-1.069416
+{txt}blinterest~t {c |}{col 14}{res}{space 2}-15315.42{col 26}{space 2} 1206.625{col 37}{space 1}  -12.69{col 46}{space 3}0.000{col 54}{space 4}-17680.85{col 67}{space 3}-12949.99
+{txt}binterest_~t {c |}{col 14}{res}{space 2} 16814.52{col 26}{space 2} 1286.372{col 37}{space 1}   13.07{col 46}{space 3}0.000{col 54}{space 4} 14292.75{col 67}{space 3} 19336.29
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2} 21.73374{col 26}{space 2} 1.104784{col 37}{space 1}   19.67{col 46}{space 3}0.000{col 54}{space 4} 19.56796{col 67}{space 3} 23.89953
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}
+{txt}Absorbed degrees of freedom:
+{res}{col 1}{text}{hline 13}{c TT}{hline 12}{hline 12}{hline 14}{hline 1}{c TRC}
+{col 1}{text} Absorbed FE{col 14}{c |} Categories{col 27} - Redundant{col 39}  = Num. Coefs{col 54}{c |}
+{res}{col 1}{text}{hline 13}{c +}{hline 12}{hline 12}{hline 14}{hline 1}{c RT}
+{col 1}{text}         cal{col 14}{c |}{space 1}       40{col 27}{space 1}        0{col 39}{result}{space 1}       40{col 53}{text} {col 54}{c |}
+{res}{col 1}{text}        fqtr{col 14}{c |}{space 1}        4{col 27}{space 1}        1{col 39}{result}{space 1}        3{col 53}{text} {col 54}{c |}
+{res}{col 1}{text}{hline 13}{c BT}{hline 12}{hline 12}{hline 14}{hline 1}{c BRC}
+{res}
+{com}. outreg2 using "/Users/yukerui/Desktop/panelb2.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/panelb2.doc"'"':/Users/yukerui/Desktop/panelb2.doc}
+{browse `"/Users/yukerui/Desktop/paper 2/paper 2 dofile"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/panelb2.txt""':seeout}
+
+{com}. 
+. * Column 3
+
+. gen binteraction1 = interaction1 - L2.interaction1
+{txt}(32,662 missing values generated)
+
+{com}. gen binteraction2 = interaction2 - L2.interaction2
+{txt}(32,662 missing values generated)
+
+{com}. gen binteraction3 = interaction3 - L2.interaction3
+{txt}(32,555 missing values generated)
+
+{com}. gen binteraction4 = D.interaction4 
+{txt}(22,280 missing values generated)
+
+{com}. 
+. reghdfe bnet_debt_issuance viol lviol blln_asset bltangible_asset blmarket_to_book blspind bbook_debt_asset blnet_worth_assets blcash_asset blebitda_asset bebitda_asset blcash_flow_asset bcash_flow_asset blnet_income_asset bnet_income_asset blinterest_expense_asset binterest_expense_asset binteraction1 binteraction2 binteraction3 binteraction4, absorb(cal fqtr) vce(cluster gvkey)
+{res}{txt}({browse "http://scorreia.com/research/hdfe.pdf":MWFE estimator} converged in 5 iterations)
+{res}
+{txt}HDFE Linear regression{col 51}Number of obs{col 67}= {res}    86,274
+{txt}Absorbing 2 HDFE groups{col 51}F({res}  21{txt},{res}   5712{txt}){col 67}= {res}    128.29
+{txt}Statistics robust to heteroskedasticity{col 51}Prob > F{col 67}= {res}    0.0000
+{txt}{col 51}R-squared{col 67}= {res}    0.1892
+{txt}{col 51}Adj R-squared{col 67}= {res}    0.1886
+{txt}{col 51}Within R-sq.{col 67}= {res}    0.1864
+{txt}{col 1}Number of clusters ({res}gvkey{txt}) {col 30}= {res}     5,713{txt}{col 51}Root MSE{col 67}= {res}  571.2581
+
+{txt}{ralign 78:(Std. err. adjusted for {res:5,713} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}bnet_debt_~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 8}viol {c |}{col 14}{res}{space 2} 20.88107{col 26}{space 2} 10.43741{col 37}{space 1}    2.00{col 46}{space 3}0.045{col 54}{space 4} .4197914{col 67}{space 3} 41.34236
+{txt}{space 7}lviol {c |}{col 14}{res}{space 2}-78.05052{col 26}{space 2} 10.50542{col 37}{space 1}   -7.43{col 46}{space 3}0.000{col 54}{space 4}-98.64514{col 67}{space 3} -57.4559
+{txt}{space 2}blln_asset {c |}{col 14}{res}{space 2} -908.665{col 26}{space 2} 27.69184{col 37}{space 1}  -32.81{col 46}{space 3}0.000{col 54}{space 4}-962.9516{col 67}{space 3}-854.3785
+{txt}bltangible~t {c |}{col 14}{res}{space 2} 688.1974{col 26}{space 2}  94.7071{col 37}{space 1}    7.27{col 46}{space 3}0.000{col 54}{space 4} 502.5355{col 67}{space 3} 873.8592
+{txt}blmarket_t~k {c |}{col 14}{res}{space 2}-10.45302{col 26}{space 2} 1.696561{col 37}{space 1}   -6.16{col 46}{space 3}0.000{col 54}{space 4}-13.77893{col 67}{space 3}-7.127119
+{txt}{space 5}blspind {c |}{col 14}{res}{space 2} 88.72232{col 26}{space 2} 33.40657{col 37}{space 1}    2.66{col 46}{space 3}0.008{col 54}{space 4} 23.23276{col 67}{space 3} 154.2119
+{txt}bbook_debt~t {c |}{col 14}{res}{space 2} 1043.335{col 26}{space 2} 50.86605{col 37}{space 1}   20.51{col 46}{space 3}0.000{col 54}{space 4} 943.6185{col 67}{space 3} 1143.052
+{txt}blnet_wort~s {c |}{col 14}{res}{space 2} 2373.627{col 26}{space 2} 93.34442{col 37}{space 1}   25.43{col 46}{space 3}0.000{col 54}{space 4} 2190.636{col 67}{space 3} 2556.617
+{txt}blcash_asset {c |}{col 14}{res}{space 2}-36.60845{col 26}{space 2} 52.83118{col 37}{space 1}   -0.69{col 46}{space 3}0.488{col 54}{space 4}-140.1776{col 67}{space 3} 66.96071
+{txt}blebitda_a~t {c |}{col 14}{res}{space 2}  370.515{col 26}{space 2} 127.9594{col 37}{space 1}    2.90{col 46}{space 3}0.004{col 54}{space 4} 119.6661{col 67}{space 3} 621.3639
+{txt}bebitda_as~t {c |}{col 14}{res}{space 2}-52.87067{col 26}{space 2} 124.5371{col 37}{space 1}   -0.42{col 46}{space 3}0.671{col 54}{space 4}-297.0106{col 67}{space 3} 191.2693
+{txt}blcash_flo~t {c |}{col 14}{res}{space 2}-217.4368{col 26}{space 2} 140.1466{col 37}{space 1}   -1.55{col 46}{space 3}0.121{col 54}{space 4}-492.1773{col 67}{space 3} 57.30365
+{txt}bcash_flow~t {c |}{col 14}{res}{space 2} 493.6086{col 26}{space 2} 154.6469{col 37}{space 1}    3.19{col 46}{space 3}0.001{col 54}{space 4}  190.442{col 67}{space 3} 796.7751
+{txt}blnet_inco~t {c |}{col 14}{res}{space 2}-233.4435{col 26}{space 2} 125.0908{col 37}{space 1}   -1.87{col 46}{space 3}0.062{col 54}{space 4}-478.6689{col 67}{space 3} 11.78193
+{txt}bnet_incom~t {c |}{col 14}{res}{space 2}-358.4388{col 26}{space 2} 142.7104{col 37}{space 1}   -2.51{col 46}{space 3}0.012{col 54}{space 4}-638.2053{col 67}{space 3}-78.67218
+{txt}blinterest~t {c |}{col 14}{res}{space 2}-19595.32{col 26}{space 2} 1350.392{col 37}{space 1}  -14.51{col 46}{space 3}0.000{col 54}{space 4} -22242.6{col 67}{space 3}-16948.04
+{txt}binterest_~t {c |}{col 14}{res}{space 2} 17550.98{col 26}{space 2} 1332.397{col 37}{space 1}   13.17{col 46}{space 3}0.000{col 54}{space 4} 14938.98{col 67}{space 3} 20162.99
+{txt}binteracti~1 {c |}{col 14}{res}{space 2} 2207.065{col 26}{space 2} 198.7076{col 37}{space 1}   11.11{col 46}{space 3}0.000{col 54}{space 4} 1817.522{col 67}{space 3} 2596.607
+{txt}binteracti~2 {c |}{col 14}{res}{space 2}-463.3725{col 26}{space 2} 285.9239{col 37}{space 1}   -1.62{col 46}{space 3}0.105{col 54}{space 4}-1023.892{col 67}{space 3} 97.14683
+{txt}binteracti~3 {c |}{col 14}{res}{space 2}-1559.119{col 26}{space 2} 82.75118{col 37}{space 1}  -18.84{col 46}{space 3}0.000{col 54}{space 4}-1721.342{col 67}{space 3}-1396.895
+{txt}binteracti~4 {c |}{col 14}{res}{space 2}-61100.32{col 26}{space 2} 8549.112{col 37}{space 1}   -7.15{col 46}{space 3}0.000{col 54}{space 4}-77859.83{col 67}{space 3}-44340.82
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2} 18.65603{col 26}{space 2} 1.121168{col 37}{space 1}   16.64{col 46}{space 3}0.000{col 54}{space 4} 16.45812{col 67}{space 3} 20.85395
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}
+{txt}Absorbed degrees of freedom:
+{res}{col 1}{text}{hline 13}{c TT}{hline 12}{hline 12}{hline 14}{hline 1}{c TRC}
+{col 1}{text} Absorbed FE{col 14}{c |} Categories{col 27} - Redundant{col 39}  = Num. Coefs{col 54}{c |}
+{res}{col 1}{text}{hline 13}{c +}{hline 12}{hline 12}{hline 14}{hline 1}{c RT}
+{col 1}{text}         cal{col 14}{c |}{space 1}       40{col 27}{space 1}        0{col 39}{result}{space 1}       40{col 53}{text} {col 54}{c |}
+{res}{col 1}{text}        fqtr{col 14}{c |}{space 1}        4{col 27}{space 1}        1{col 39}{result}{space 1}        3{col 53}{text} {col 54}{c |}
+{res}{col 1}{text}{hline 13}{c BT}{hline 12}{hline 12}{hline 14}{hline 1}{c BRC}
+{res}
+{com}. outreg2 using "/Users/yukerui/Desktop/panelb3.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/panelb3.doc"'"':/Users/yukerui/Desktop/panelb3.doc}
+{browse `"/Users/yukerui/Desktop/paper 2/paper 2 dofile"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/panelb3.txt""':seeout}
+
+{com}. 
+. * Column 4
+
+. foreach var in bbook_debt_asset blnet_worth_assets blcash_asset blebitda_asset bebitda_asset blcash_flow_asset bcash_flow_asset blnet_income_asset bnet_income_asset blinterest_expense_asset binterest_expense_asset binteraction1 binteraction2 binteraction3 binteraction4 {c -(}
+{txt}  2{com}.     gen `var'_s2 = `var'^2
+{txt}  3{com}.     gen `var'_c3 = `var'^3
+{txt}  4{com}. egen `var'_ile = xtile(`var'), nq(5)
+{txt}  5{com}. {c )-}
+{txt}(22,313 missing values generated)
+(22,313 missing values generated)
+(22,313 missing values generated)
+(22,269 missing values generated)
+(22,269 missing values generated)
+(22,269 missing values generated)
+(22,269 missing values generated)
+(22,269 missing values generated)
+(22,269 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(11,570 missing values generated)
+(32,662 missing values generated)
+(32,662 missing values generated)
+(32,662 missing values generated)
+(32,662 missing values generated)
+(32,662 missing values generated)
+(32,662 missing values generated)
+(32,555 missing values generated)
+(32,555 missing values generated)
+(32,555 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+(22,280 missing values generated)
+
+{com}. reghdfe bnet_debt_issuance viol lviol blln_asset bltangible_asset blmarket_to_book blspind bbook_debt_asset blnet_worth_assets blcash_asset blebitda_asset bebitda_asset blcash_flow_asset bcash_flow_asset blnet_income_asset bnet_income_asset blinterest_expense_asset binterest_expense_asset binteraction1 binteraction2 binteraction3 binteraction4 *_s2 *_c3, absorb(cal fqtr *_ile) vce(cluster gvkey)
+{res}{txt}({browse "http://scorreia.com/research/hdfe.pdf":MWFE estimator} converged in 43 iterations)
+{res}
+{txt}HDFE Linear regression{col 51}Number of obs{col 67}= {res}    86,274
+{txt}Absorbing 32 HDFE groups{col 51}F({res}  81{txt},{res}   5712{txt}){col 67}= {res}     36.62
+{txt}Statistics robust to heteroskedasticity{col 51}Prob > F{col 67}= {res}    0.0000
+{txt}{col 51}R-squared{col 67}= {res}    0.3136
+{txt}{col 51}Adj R-squared{col 67}= {res}    0.3116
+{txt}{col 51}Within R-sq.{col 67}= {res}    0.0988
+{txt}{col 1}Number of clusters ({res}gvkey{txt}) {col 30}= {res}     5,713{txt}{col 51}Root MSE{col 67}= {res}  526.1646
+
+{txt}{ralign 78:(Std. err. adjusted for {res:5,713} clusters in {res:gvkey})}
+{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 14}{c |}{col 26}    Robust
+{col 1}bnet_debt_~e{col 14}{c |} Coefficient{col 26}  std. err.{col 38}      t{col 46}   P>|t|{col 54}     [95% con{col 67}f. interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 8}viol {c |}{col 14}{res}{space 2} 19.09375{col 26}{space 2} 9.901573{col 37}{space 1}    1.93{col 46}{space 3}0.054{col 54}{space 4}-.3170943{col 67}{space 3} 38.50458
+{txt}{space 7}lviol {c |}{col 14}{res}{space 2}-56.87695{col 26}{space 2} 10.07151{col 37}{space 1}   -5.65{col 46}{space 3}0.000{col 54}{space 4}-76.62094{col 67}{space 3}-37.13296
+{txt}{space 2}blln_asset {c |}{col 14}{res}{space 2}-820.4802{col 26}{space 2} 24.46258{col 37}{space 1}  -33.54{col 46}{space 3}0.000{col 54}{space 4}-868.4361{col 67}{space 3}-772.5242
+{txt}bltangible~t {c |}{col 14}{res}{space 2} 470.9925{col 26}{space 2} 86.65921{col 37}{space 1}    5.43{col 46}{space 3}0.000{col 54}{space 4} 301.1075{col 67}{space 3} 640.8774
+{txt}blmarket_t~k {c |}{col 14}{res}{space 2}-3.635907{col 26}{space 2} 1.442236{col 37}{space 1}   -2.52{col 46}{space 3}0.012{col 54}{space 4}-6.463236{col 67}{space 3}-.8085782
+{txt}{space 5}blspind {c |}{col 14}{res}{space 2} 77.07587{col 26}{space 2} 30.02811{col 37}{space 1}    2.57{col 46}{space 3}0.010{col 54}{space 4} 18.20938{col 67}{space 3} 135.9424
+{txt}bbook_debt~t {c |}{col 14}{res}{space 2} 1190.761{col 26}{space 2} 75.07854{col 37}{space 1}   15.86{col 46}{space 3}0.000{col 54}{space 4} 1043.579{col 67}{space 3} 1337.944
+{txt}blnet_wort~s {c |}{col 14}{res}{space 2} 1754.864{col 26}{space 2} 89.07154{col 37}{space 1}   19.70{col 46}{space 3}0.000{col 54}{space 4}  1580.25{col 67}{space 3} 1929.478
+{txt}blcash_asset {c |}{col 14}{res}{space 2} -143.402{col 26}{space 2}  82.0596{col 37}{space 1}   -1.75{col 46}{space 3}0.081{col 54}{space 4}  -304.27{col 67}{space 3}  17.4659
+{txt}blebitda_a~t {c |}{col 14}{res}{space 2} 565.6894{col 26}{space 2} 217.6767{col 37}{space 1}    2.60{col 46}{space 3}0.009{col 54}{space 4} 138.9605{col 67}{space 3} 992.4183
+{txt}bebitda_as~t {c |}{col 14}{res}{space 2}-662.2868{col 26}{space 2} 306.0121{col 37}{space 1}   -2.16{col 46}{space 3}0.030{col 54}{space 4}-1262.187{col 67}{space 3}-62.38711
+{txt}blcash_flo~t {c |}{col 14}{res}{space 2}-409.2688{col 26}{space 2} 239.5605{col 37}{space 1}   -1.71{col 46}{space 3}0.088{col 54}{space 4}-878.8982{col 67}{space 3} 60.36058
+{txt}bcash_flow~t {c |}{col 14}{res}{space 2} 657.8989{col 26}{space 2} 366.7231{col 37}{space 1}    1.79{col 46}{space 3}0.073{col 54}{space 4}-61.01747{col 67}{space 3} 1376.815
+{txt}blnet_inco~t {c |}{col 14}{res}{space 2}-228.2389{col 26}{space 2}  221.284{col 37}{space 1}   -1.03{col 46}{space 3}0.302{col 54}{space 4}-662.0394{col 67}{space 3} 205.5617
+{txt}bnet_incom~t {c |}{col 14}{res}{space 2}-81.23647{col 26}{space 2} 392.8425{col 37}{space 1}   -0.21{col 46}{space 3}0.836{col 54}{space 4}-851.3569{col 67}{space 3} 688.8839
+{txt}blinterest~t {c |}{col 14}{res}{space 2} -11767.7{col 26}{space 2}  2160.23{col 37}{space 1}   -5.45{col 46}{space 3}0.000{col 54}{space 4}-16002.57{col 67}{space 3}-7532.832
+{txt}binterest_~t {c |}{col 14}{res}{space 2} -7834.74{col 26}{space 2}   8742.1{col 37}{space 1}   -0.90{col 46}{space 3}0.370{col 54}{space 4}-24972.57{col 67}{space 3} 9303.092
+{txt}binteracti~1 {c |}{col 14}{res}{space 2} 2865.891{col 26}{space 2} 288.1128{col 37}{space 1}    9.95{col 46}{space 3}0.000{col 54}{space 4} 2301.081{col 67}{space 3} 3430.701
+{txt}binteract~n2 {c |}{col 14}{res}{space 2} -178.277{col 26}{space 2} 404.6122{col 37}{space 1}   -0.44{col 46}{space 3}0.660{col 54}{space 4}-971.4703{col 67}{space 3} 614.9163
+{txt}binteract~n3 {c |}{col 14}{res}{space 2}-299.7982{col 26}{space 2} 122.7926{col 37}{space 1}   -2.44{col 46}{space 3}0.015{col 54}{space 4}-540.5183{col 67}{space 3}-59.07813
+{txt}binteracti~4 {c |}{col 14}{res}{space 2}-35638.56{col 26}{space 2} 11812.84{col 37}{space 1}   -3.02{col 46}{space 3}0.003{col 54}{space 4}-58796.21{col 67}{space 3}-12480.92
+{txt}lbook_debt~2 {c |}{col 14}{res}{space 2}-3720.698{col 26}{space 2} 263.6929{col 37}{space 1}  -14.11{col 46}{space 3}0.000{col 54}{space 4}-4237.636{col 67}{space 3} -3203.76
+{txt}lnet_worth~2 {c |}{col 14}{res}{space 2}  251.229{col 26}{space 2} 126.4419{col 37}{space 1}    1.99{col 46}{space 3}0.047{col 54}{space 4}  3.35486{col 67}{space 3} 499.1031
+{txt}lcash_asse~2 {c |}{col 14}{res}{space 2}-50.50124{col 26}{space 2} 170.9381{col 37}{space 1}   -0.30{col 46}{space 3}0.768{col 54}{space 4}-385.6048{col 67}{space 3} 284.6023
+{txt}lebitda_as~2 {c |}{col 14}{res}{space 2}  5631.48{col 26}{space 2} 2459.306{col 37}{space 1}    2.29{col 46}{space 3}0.022{col 54}{space 4} 810.3078{col 67}{space 3} 10452.65
+{txt}ebitda_ass~2 {c |}{col 14}{res}{space 2}-181.1941{col 26}{space 2}  2391.33{col 37}{space 1}   -0.08{col 46}{space 3}0.940{col 54}{space 4}-4869.108{col 67}{space 3}  4506.72
+{txt}lcash_flow~2 {c |}{col 14}{res}{space 2}-4369.291{col 26}{space 2} 3338.074{col 37}{space 1}   -1.31{col 46}{space 3}0.191{col 54}{space 4}-10913.18{col 67}{space 3}   2174.6
+{txt}cash_flow_~2 {c |}{col 14}{res}{space 2}-180.8696{col 26}{space 2} 3305.155{col 37}{space 1}   -0.05{col 46}{space 3}0.956{col 54}{space 4}-6660.227{col 67}{space 3} 6298.488
+{txt}lnet_incom~2 {c |}{col 14}{res}{space 2} 3239.121{col 26}{space 2} 3306.642{col 37}{space 1}    0.98{col 46}{space 3}0.327{col 54}{space 4}-3243.151{col 67}{space 3} 9721.393
+{txt}net_income~2 {c |}{col 14}{res}{space 2} -4382.11{col 26}{space 2} 3330.471{col 37}{space 1}   -1.32{col 46}{space 3}0.188{col 54}{space 4} -10911.1{col 67}{space 3} 2146.877
+{txt}linterest_~2 {c |}{col 14}{res}{space 2}-340533.3{col 26}{space 2} 750807.8{col 37}{space 1}   -0.45{col 46}{space 3}0.650{col 54}{space 4} -1812401{col 67}{space 3}  1131335
+{txt}interest_e~2 {c |}{col 14}{res}{space 2}  2795834{col 26}{space 2} 758962.9{col 37}{space 1}    3.68{col 46}{space 3}0.000{col 54}{space 4}  1307979{col 67}{space 3}  4283690
+{txt}interac~1_s2 {c |}{col 14}{res}{space 2} 11035.53{col 26}{space 2} 5023.824{col 37}{space 1}    2.20{col 46}{space 3}0.028{col 54}{space 4}  1186.93{col 67}{space 3} 20884.13
+{txt}interac~2_s2 {c |}{col 14}{res}{space 2}-10282.29{col 26}{space 2} 8556.968{col 37}{space 1}   -1.20{col 46}{space 3}0.230{col 54}{space 4} -27057.2{col 67}{space 3}  6492.61
+{txt}interac~3_s2 {c |}{col 14}{res}{space 2} 1637.359{col 26}{space 2}  348.376{col 37}{space 1}    4.70{col 46}{space 3}0.000{col 54}{space 4}   954.41{col 67}{space 3} 2320.308
+{txt}interac~4_s2 {c |}{col 14}{res}{space 2}-1.46e+07{col 26}{space 2}  7829117{col 37}{space 1}   -1.87{col 46}{space 3}0.062{col 54}{space 4}-3.00e+07{col 67}{space 3} 740081.6
+{txt}bbook_debt~2 {c |}{col 14}{res}{space 2} 223.6837{col 26}{space 2} 71.13198{col 37}{space 1}    3.14{col 46}{space 3}0.002{col 54}{space 4} 84.23801{col 67}{space 3} 363.1293
+{txt}blnet_wort~2 {c |}{col 14}{res}{space 2}-23.18605{col 26}{space 2} 64.73332{col 37}{space 1}   -0.36{col 46}{space 3}0.720{col 54}{space 4}-150.0879{col 67}{space 3} 103.7158
+{txt}blcash_ass~2 {c |}{col 14}{res}{space 2} 228.7556{col 26}{space 2} 118.6352{col 37}{space 1}    1.93{col 46}{space 3}0.054{col 54}{space 4}-3.814467{col 67}{space 3} 461.3257
+{txt}blebitda_a~2 {c |}{col 14}{res}{space 2} -298.096{col 26}{space 2} 655.7317{col 37}{space 1}   -0.45{col 46}{space 3}0.649{col 54}{space 4}-1583.579{col 67}{space 3} 987.3869
+{txt}bebitda_as~2 {c |}{col 14}{res}{space 2} 345.0735{col 26}{space 2} 600.9152{col 37}{space 1}    0.57{col 46}{space 3}0.566{col 54}{space 4}-832.9482{col 67}{space 3} 1523.095
+{txt}blcash_flo~2 {c |}{col 14}{res}{space 2}-626.3718{col 26}{space 2} 571.2367{col 37}{space 1}   -1.10{col 46}{space 3}0.273{col 54}{space 4}-1746.213{col 67}{space 3} 493.4689
+{txt}bcash_flow~2 {c |}{col 14}{res}{space 2} 233.1027{col 26}{space 2}  522.615{col 37}{space 1}    0.45{col 46}{space 3}0.656{col 54}{space 4}-791.4209{col 67}{space 3} 1257.626
+{txt}blnet_inco~2 {c |}{col 14}{res}{space 2} 521.3454{col 26}{space 2} 502.5074{col 37}{space 1}    1.04{col 46}{space 3}0.300{col 54}{space 4}-463.7598{col 67}{space 3} 1506.451
+{txt}bnet_incom~2 {c |}{col 14}{res}{space 2}-471.6379{col 26}{space 2} 467.2016{col 37}{space 1}   -1.01{col 46}{space 3}0.313{col 54}{space 4} -1387.53{col 67}{space 3} 444.2546
+{txt}blinterest~2 {c |}{col 14}{res}{space 2}-314605.4{col 26}{space 2} 77977.28{col 37}{space 1}   -4.03{col 46}{space 3}0.000{col 54}{space 4}-467470.5{col 67}{space 3}-161740.4
+{txt}binterest_~2 {c |}{col 14}{res}{space 2} 321610.7{col 26}{space 2} 72088.16{col 37}{space 1}    4.46{col 46}{space 3}0.000{col 54}{space 4} 180290.5{col 67}{space 3} 462930.8
+{txt}bintera~1_s2 {c |}{col 14}{res}{space 2}-1713.979{col 26}{space 2}   951.82{col 37}{space 1}   -1.80{col 46}{space 3}0.072{col 54}{space 4}-3579.908{col 67}{space 3}  151.949
+{txt}bintera~2_s2 {c |}{col 14}{res}{space 2} 2939.447{col 26}{space 2} 1709.443{col 37}{space 1}    1.72{col 46}{space 3}0.086{col 54}{space 4}-411.7085{col 67}{space 3} 6290.603
+{txt}bintera~3_s2 {c |}{col 14}{res}{space 2} 193.9812{col 26}{space 2} 217.3593{col 37}{space 1}    0.89{col 46}{space 3}0.372{col 54}{space 4}-232.1256{col 67}{space 3} 620.0879
+{txt}bintera~4_s2 {c |}{col 14}{res}{space 2} 974253.3{col 26}{space 2}  1435292{col 37}{space 1}    0.68{col 46}{space 3}0.497{col 54}{space 4} -1839464{col 67}{space 3}  3787971
+{txt}lbook_debt~3 {c |}{col 14}{res}{space 2} 3448.296{col 26}{space 2} 279.6511{col 37}{space 1}   12.33{col 46}{space 3}0.000{col 54}{space 4} 2900.074{col 67}{space 3} 3996.518
+{txt}lnet_worth~3 {c |}{col 14}{res}{space 2}-429.2997{col 26}{space 2} 114.7293{col 37}{space 1}   -3.74{col 46}{space 3}0.000{col 54}{space 4}-654.2126{col 67}{space 3}-204.3868
+{txt}lcash_asse~3 {c |}{col 14}{res}{space 2} 148.1809{col 26}{space 2} 195.4234{col 37}{space 1}    0.76{col 46}{space 3}0.448{col 54}{space 4} -234.923{col 67}{space 3} 531.2848
+{txt}lebitda_as~3 {c |}{col 14}{res}{space 2} 14898.67{col 26}{space 2} 8994.141{col 37}{space 1}    1.66{col 46}{space 3}0.098{col 54}{space 4}-2733.256{col 67}{space 3}  32530.6
+{txt}ebitda_ass~3 {c |}{col 14}{res}{space 2}-2380.769{col 26}{space 2}  9029.09{col 37}{space 1}   -0.26{col 46}{space 3}0.792{col 54}{space 4}-20081.21{col 67}{space 3} 15319.67
+{txt}lcash_flow~3 {c |}{col 14}{res}{space 2}-10958.68{col 26}{space 2}  9300.99{col 37}{space 1}   -1.18{col 46}{space 3}0.239{col 54}{space 4}-29192.14{col 67}{space 3} 7274.792
+{txt}cash_flow_~3 {c |}{col 14}{res}{space 2}-2509.647{col 26}{space 2} 9230.375{col 37}{space 1}   -0.27{col 46}{space 3}0.786{col 54}{space 4}-20604.68{col 67}{space 3} 15585.39
+{txt}lnet_incom~3 {c |}{col 14}{res}{space 2} 6247.494{col 26}{space 2} 8353.176{col 37}{space 1}    0.75{col 46}{space 3}0.455{col 54}{space 4} -10127.9{col 67}{space 3} 22622.89
+{txt}net_income~3 {c |}{col 14}{res}{space 2} -9638.69{col 26}{space 2} 8397.958{col 37}{space 1}   -1.15{col 46}{space 3}0.251{col 54}{space 4}-26101.87{col 67}{space 3} 6824.494
+{txt}linterest_~3 {c |}{col 14}{res}{space 2}  1296091{col 26}{space 2} 1.93e+07{col 37}{space 1}    0.07{col 46}{space 3}0.946{col 54}{space 4}-3.65e+07{col 67}{space 3} 3.91e+07
+{txt}interest_e~3 {c |}{col 14}{res}{space 2}-7.75e+07{col 26}{space 2} 1.94e+07{col 37}{space 1}   -3.99{col 46}{space 3}0.000{col 54}{space 4}-1.15e+08{col 67}{space 3}-3.94e+07
+{txt}interac~1_c3 {c |}{col 14}{res}{space 2} 45843.31{col 26}{space 2} 19704.98{col 37}{space 1}    2.33{col 46}{space 3}0.020{col 54}{space 4} 7214.068{col 67}{space 3} 84472.55
+{txt}interac~2_c3 {c |}{col 14}{res}{space 2}-58820.23{col 26}{space 2}  41981.4{col 37}{space 1}   -1.40{col 46}{space 3}0.161{col 54}{space 4}-141119.7{col 67}{space 3} 23479.23
+{txt}interac~3_c3 {c |}{col 14}{res}{space 2} 5814.821{col 26}{space 2} 963.5298{col 37}{space 1}    6.03{col 46}{space 3}0.000{col 54}{space 4} 3925.937{col 67}{space 3} 7703.705
+{txt}interac~4_c3 {c |}{col 14}{res}{space 2}-1.36e+09{col 26}{space 2} 1.21e+09{col 37}{space 1}   -1.13{col 46}{space 3}0.261{col 54}{space 4}-3.72e+09{col 67}{space 3} 1.01e+09
+{txt}bbook_debt~3 {c |}{col 14}{res}{space 2}-1099.036{col 26}{space 2} 156.3881{col 37}{space 1}   -7.03{col 46}{space 3}0.000{col 54}{space 4}-1405.616{col 67}{space 3}-792.4565
+{txt}blnet_wort~3 {c |}{col 14}{res}{space 2}-865.7587{col 26}{space 2} 95.58984{col 37}{space 1}   -9.06{col 46}{space 3}0.000{col 54}{space 4}-1053.151{col 67}{space 3}-678.3664
+{txt}blcash_ass~3 {c |}{col 14}{res}{space 2} 838.1272{col 26}{space 2} 280.5807{col 37}{space 1}    2.99{col 46}{space 3}0.003{col 54}{space 4} 288.0826{col 67}{space 3} 1388.172
+{txt}blebitda_a~3 {c |}{col 14}{res}{space 2} -6371.74{col 26}{space 2} 3563.782{col 37}{space 1}   -1.79{col 46}{space 3}0.074{col 54}{space 4}-13358.11{col 67}{space 3} 614.6255
+{txt}bebitda_as~3 {c |}{col 14}{res}{space 2} 10380.12{col 26}{space 2} 3998.495{col 37}{space 1}    2.60{col 46}{space 3}0.009{col 54}{space 4} 2541.553{col 67}{space 3} 18218.69
+{txt}blcash_flo~3 {c |}{col 14}{res}{space 2} 2767.137{col 26}{space 2}  2548.34{col 37}{space 1}    1.09{col 46}{space 3}0.278{col 54}{space 4}-2228.577{col 67}{space 3} 7762.851
+{txt}bcash_flow~3 {c |}{col 14}{res}{space 2}-2777.678{col 26}{space 2} 2830.256{col 37}{space 1}   -0.98{col 46}{space 3}0.326{col 54}{space 4}-8326.054{col 67}{space 3} 2770.698
+{txt}blnet_inco~3 {c |}{col 14}{res}{space 2} 1224.696{col 26}{space 2}  2266.61{col 37}{space 1}    0.54{col 46}{space 3}0.589{col 54}{space 4} -3218.72{col 67}{space 3} 5668.112
+{txt}bnet_incom~3 {c |}{col 14}{res}{space 2}-1404.056{col 26}{space 2}  2559.86{col 37}{space 1}   -0.55{col 46}{space 3}0.583{col 54}{space 4}-6422.352{col 67}{space 3}  3614.24
+{txt}blinterest~3 {c |}{col 14}{res}{space 2}  6737747{col 26}{space 2}  5308336{col 37}{space 1}    1.27{col 46}{space 3}0.204{col 54}{space 4} -3668606{col 67}{space 3} 1.71e+07
+{txt}binterest_~3 {c |}{col 14}{res}{space 2}-1.44e+07{col 26}{space 2}  5062108{col 37}{space 1}   -2.85{col 46}{space 3}0.004{col 54}{space 4}-2.44e+07{col 67}{space 3} -4509764
+{txt}bintera~1_c3 {c |}{col 14}{res}{space 2}-23832.16{col 26}{space 2}  5817.74{col 37}{space 1}   -4.10{col 46}{space 3}0.000{col 54}{space 4}-35237.14{col 67}{space 3}-12427.19
+{txt}bintera~2_c3 {c |}{col 14}{res}{space 2} 12378.02{col 26}{space 2} 11654.78{col 37}{space 1}    1.06{col 46}{space 3}0.288{col 54}{space 4}-10469.77{col 67}{space 3} 35225.81
+{txt}bintera~3_c3 {c |}{col 14}{res}{space 2} 1412.989{col 26}{space 2} 845.2255{col 37}{space 1}    1.67{col 46}{space 3}0.095{col 54}{space 4}-243.9739{col 67}{space 3} 3069.951
+{txt}bintera~4_c3 {c |}{col 14}{res}{space 2} 3.06e+08{col 26}{space 2} 3.43e+08{col 37}{space 1}    0.89{col 46}{space 3}0.372{col 54}{space 4}-3.66e+08{col 67}{space 3} 9.78e+08
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2} 133.8762{col 26}{space 2} 22.59675{col 37}{space 1}    5.92{col 46}{space 3}0.000{col 54}{space 4} 89.57795{col 67}{space 3} 178.1744
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}
+{txt}Absorbed degrees of freedom:
+{res}{col 1}{text}{hline 30}{c TT}{hline 12}{hline 12}{hline 14}{hline 1}{c TRC}
+{col 1}{text}                  Absorbed FE{col 31}{c |} Categories{col 44} - Redundant{col 56}  = Num. Coefs{col 71}{c |}
+{res}{col 1}{text}{hline 30}{c +}{hline 12}{hline 12}{hline 14}{hline 1}{c RT}
+{col 1}{text}                          cal{col 31}{c |}{space 1}       40{col 44}{space 1}        0{col 56}{result}{space 1}       40{col 70}{text} {col 71}{c |}
+{res}{col 1}{text}                         fqtr{col 31}{c |}{space 1}        4{col 44}{space 1}        1{col 56}{result}{space 1}        3{col 70}{text} {col 71}{c |}
+{res}{col 1}{text}         lbook_debt_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}        lnet_worth_assets_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}              lcash_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}            lebitda_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}             ebitda_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}         lcash_flow_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}          cash_flow_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}        lnet_income_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}         net_income_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}  linterest_expense_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}   interest_expense_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}             interaction1_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}             interaction2_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}             interaction3_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}             interaction4_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}         bbook_debt_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}       blnet_worth_assets_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}             blcash_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}           blebitda_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}            bebitda_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}        blcash_flow_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}         bcash_flow_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}       blnet_income_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}        bnet_income_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text} blinterest_expense_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}  binterest_expense_asset_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}            binteraction1_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}            binteraction2_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}            binteraction3_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}            binteraction4_ile{col 31}{c |}{space 1}        5{col 44}{space 1}        1{col 56}{result}{space 1}        4{col 70}{text}?{col 71}{c |}
+{res}{col 1}{text}{hline 30}{c BT}{hline 12}{hline 12}{hline 14}{hline 1}{c BRC}
+? = number of redundant parameters may be higher
+{res}
+{com}. outreg2 using "/Users/yukerui/Desktop/panelb4.doc"
+{txt}{stata `"shellout using `"/Users/yukerui/Desktop/panelb4.doc"'"':/Users/yukerui/Desktop/panelb4.doc}
+{browse `"/Users/yukerui/Desktop/paper 2/paper 2 dofile"' :dir}{com} : {txt}{stata `"seeout using "/Users/yukerui/Desktop/panelb4.txt""':seeout}
+
+{com}. 
+. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}/Users/yukerui/Desktop/paper 2 log file.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res} 6 Feb 2024, 02:30:01
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

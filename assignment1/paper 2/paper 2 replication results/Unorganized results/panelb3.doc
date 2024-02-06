@@ -1,0 +1,60 @@
+{\rtf1\fs24
+\trowd\trgaph75\trleft-75\intbl\trqc\clbrdrt\brdrs\cellx3600\clbrdrt\brdrs\cellx6336
+\ql \cell\qc (1)\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx3600\cellx6336
+\trowd\trgaph75\trleft-75\trqc\clbrdrb\brdrs\cellx3600\clbrdrb\brdrs\cellx6336
+\ql VARIABLES\cell\qc bnet_debt_issuance\cell\row
+\trowd\trgaph75\trleft-75\trqc\cellx3600\cellx6336
+\ql \cell\qc \cell\row
+\ql viol\cell\qc 20.88**\cell\row
+\ql \cell\qc (10.44)\cell\row
+\ql lviol\cell\qc -78.05***\cell\row
+\ql \cell\qc (10.51)\cell\row
+\ql blln_asset\cell\qc -908.7***\cell\row
+\ql \cell\qc (27.69)\cell\row
+\ql bltangible_asset\cell\qc 688.2***\cell\row
+\ql \cell\qc (94.71)\cell\row
+\ql blmarket_to_book\cell\qc -10.45***\cell\row
+\ql \cell\qc (1.697)\cell\row
+\ql blspind\cell\qc 88.72***\cell\row
+\ql \cell\qc (33.41)\cell\row
+\ql bbook_debt_asset\cell\qc 1,043***\cell\row
+\ql \cell\qc (50.87)\cell\row
+\ql blnet_worth_assets\cell\qc 2,374***\cell\row
+\ql \cell\qc (93.34)\cell\row
+\ql blcash_asset\cell\qc -36.61\cell\row
+\ql \cell\qc (52.83)\cell\row
+\ql blebitda_asset\cell\qc 370.5***\cell\row
+\ql \cell\qc (128.0)\cell\row
+\ql bebitda_asset\cell\qc -52.87\cell\row
+\ql \cell\qc (124.5)\cell\row
+\ql blcash_flow_asset\cell\qc -217.4\cell\row
+\ql \cell\qc (140.1)\cell\row
+\ql bcash_flow_asset\cell\qc 493.6***\cell\row
+\ql \cell\qc (154.6)\cell\row
+\ql blnet_income_asset\cell\qc -233.4*\cell\row
+\ql \cell\qc (125.1)\cell\row
+\ql bnet_income_asset\cell\qc -358.4**\cell\row
+\ql \cell\qc (142.7)\cell\row
+\ql blinterest_expense_asset\cell\qc -19,595***\cell\row
+\ql \cell\qc (1,350)\cell\row
+\ql binterest_expense_asset\cell\qc 17,551***\cell\row
+\ql \cell\qc (1,332)\cell\row
+\ql binteraction1\cell\qc 2,207***\cell\row
+\ql \cell\qc (198.7)\cell\row
+\ql binteraction2\cell\qc -463.4\cell\row
+\ql \cell\qc (285.9)\cell\row
+\ql binteraction3\cell\qc -1,559***\cell\row
+\ql \cell\qc (82.75)\cell\row
+\ql binteraction4\cell\qc -61,100***\cell\row
+\ql \cell\qc (8,549)\cell\row
+\ql Constant\cell\qc 18.66***\cell\row
+\ql \cell\qc (1.121)\cell\row
+\ql \cell\qc \cell\row
+\ql Observations\cell\qc 86,274\cell\row
+\trowd\trgaph75\trleft-75\trqc\trbrdrb\brdrs\clbrdrb\brdrs\cellx3600\clbrdrb\brdrs\cellx6336
+\ql R-squared\cell\qc 0.189\cell\row
+\pard\qc
+Robust standard errors in parentheses\par
+*** p<0.01, ** p<0.05, * p<0.1\par
+}
